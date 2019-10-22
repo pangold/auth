@@ -1,20 +1,30 @@
-package redis
+package redic
 
 import (
-	"github.com/garyburd/redigo/redis"
+	"fmt"
+	"github.com/gomodule/redigo/redis"
 )
 
 type MyRedis struct {
-	conn *Redis.Conn
+	conn redis.Conn
+}
+
+func UseMyRedis(hostName string) *MyRedis {
+	var myRedis MyRedis
+	if err := myRedis.Connect(hostName); err != nil {
+		fmt.Printf("Error: %s\n", err.Error())
+		return nil
+	}
+	return &myRedis
 }
 
 func (my *MyRedis) Connect(hostName string) error {
-	c, err := redis.Dail("tcp", hostName)
+	c, err := redis.Dial("tcp", hostName)
 	if err != nil {
 		fmt.Println("connection failure")
 		return err
 	}
-	my.conn = &c
+	my.conn = c
 	return nil
 }
 

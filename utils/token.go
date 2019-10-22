@@ -13,8 +13,8 @@ func init() {
 	t = token.UseJwtToken("MySecretKey")
 }
 
-func GenerateToken(userId, userName string) string {
-	return t.GenerateToken(userId, userName)
+func GenerateToken(userId, userName string, expire uint) string {
+	return t.GenerateToken(userId, userName, expire)
 }
 
 func ExplainToken(token string, userId, userName *string) error {
