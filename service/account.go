@@ -2,8 +2,8 @@ package service
 
 import (
 	"fmt"
-	"./utils"
-	"./model"
+	"../utils"
+	"../model"
 )
 
 
@@ -11,16 +11,16 @@ import (
 // Registration or Forgot Password will need this function to get verification code
 func RequirePhoneCode(phone string) error {
 	// Check if this phone number had required
-	if utils.HasCacheKey("account", "verify", phone) {
+	if utils.HasCacheKey("account", phone) {
 		return "too frequent, please try again later."
 	}
 	// Generate a verification code, and save into Cache
 	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", "verify", phone, code, 60); err != nil {
+	if err := utils.SetCacheValue("account", phone, code, 60 * 60 * 2); err != nil {
 		return err
 	}
 	// Use SMS to send mobile short message
-	content := utils.GetVerificationText("nil", "account module", code)
+	content := utils.GetVerificationText("Corp", code)
 	if err := utils.SendSMS(phone, content); err != nil {
 		return err
 	}
@@ -31,16 +31,16 @@ func RequirePhoneCode(phone string) error {
 // Registration or Forgot Password will need this function to get verification code
 func RequireEmailCode(email string) error {
 	// Check if this email had required
-	if utils.HasCacheKey("account", "verify", email) {
+	if utils.HasCacheKey("account", email) {
 		return "Require too frequent, please try again later."
 	}
 	// Generate a verification code, and save into Cache
 	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", "verify", email, code, 60); err != nil {
+	if err := utils.SetCacheValue("account", email, code, 60); err != nil {
 		return err
 	}
 	// Use Email service to send an email
-	content := utils.GetVerificationText("nil", "account module", code)
+	content := utils.GetVerificationText("Corp", code)
 	if err := utils.SendEmail(email, content); err != nil {
 		return err
 	}

@@ -1,12 +1,11 @@
-package main
+package model
 
 import (
 	"fmt"
-
-	"./model"
+	"testing"
 )
 
-func testAutoSave() {
+func TestAutoSave(t *testing.T) {
 	account := model.Account{Username: "Ai3ueJSKt6", Email: "omg@gmail.com", Phone: "13888888888", Password: "88888888", IsActivated: false, IsEnabled: false, IsLocked: false}
 	if err := model.SaveAccount(&account); err != nil {
 		fmt.Println(err)
@@ -19,7 +18,7 @@ func testAutoSave() {
 	}
 }
 
-func testQuery() {
+func TestQuery(t *testing.T) {
 	var err error
 	var accounts, accounts2, accounts3, accounts4 []model.Account
 	accounts, err = model.GetAccounts()
@@ -72,7 +71,7 @@ func testQuery() {
 	fmt.Println(id3)
 }
 
-func testPasswordMatch() {
+func TestPasswordMatch(t *testing.T) {
 	// With correct/incorrect password
 	var err error
 	var account10, account11, account12 *model.Account
@@ -92,7 +91,7 @@ func testPasswordMatch() {
 	fmt.Println("MatchXXXAndPassword End")
 }
 
-func testInsert() {
+func TestInsert(t *testing.T) {
 	fmt.Println("TestInsert Begin")
 	account := model.Account{Username: "1234567890", Password: "88888888"}
 	if err := model.InsertAccount(&account); err != nil {
@@ -102,7 +101,7 @@ func testInsert() {
 	fmt.Println("TestInsert End")
 }
 
-func testInsertAndUpdate() {
+func TestInsertAndUpdate(t *testing.T) {
 	fmt.Println("TestInsertAndUpdate Begin")
 	account := model.Account{Email: "x@111.com", Phone: "13111111111", Username: "pandora", Password: "12345678"}
 	if err := model.InsertAccount(&account); err != nil {
@@ -120,7 +119,7 @@ func testInsertAndUpdate() {
 	fmt.Println("TestInsertAndUpdate End")
 }
 
-func testUpdateStatus() {
+func TestUpdateStatus(t *testing.T) {
 	var err error
 	var account model.Account
 	if account, err = model.GetAccountByUsername("1234567890"); err != nil {
@@ -154,13 +153,4 @@ func testUpdateStatus() {
 	//	fmt.Println(err.Error())
 	//}
 	//fmt.Println(account)
-}
-
-func main() {
-	//testAutoSave()
-	//testQuery()
-	//testPasswordMatch()
-	//testInsert()
-	//testInsertAndUpdate()
-	testUpdateStatus()
 }

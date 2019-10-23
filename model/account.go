@@ -139,7 +139,8 @@ func (a *Account) FromJsonString(jsonString string) error {
 }
 
 // Query
-func GetAccounts() (accounts []Account, error) {
+func GetAccounts() ([]Account, error) {
+	var accounts []Account
 	if err := db.Find(&accounts).Error; err != nil {
 		return nil, err
 	}
@@ -150,29 +151,33 @@ func GetValidAccounts() ([]Account, error) {
 	return GetAccountsByState(Account{IsActivated: true, IsLocked: false, IsEnabled: true})
 }
 
-func GetAccountsByState(account Account) (accounts []Account, error) {
+func GetAccountsByState(account Account) ([]Account, error) {
+	var accounts []Account
 	// in those 3 states are bool: we can't get data if value = false
 	if err := db.Where("is_activate = ? and is_locked = ? and is_enabled = ?", account.IsActivated, account.IsLocked, account.IsEnabled).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
-	return
+	return accounts, nil
 }
 
-func GetActivatedAccounts(activated bool) (accounts []Account, error) {
+func GetActivatedAccounts(activated bool) ([]Account, error) {
+	var accounts []Account
 	if err := db.Where("is_activated = ?", activated).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
 }
 
-func GetLockedAccounts(locked bool) (accounts []Account, error) {
+func GetLockedAccounts(locked bool) ([]Account, error) {
+	var accounts []Account
 	if err := db.Where("is_locked = ?", locked).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
 }
 
-func GetEnabledAccounts(enabled bool) (accounts []Account, error) {
+func GetEnabledAccounts(enabled bool) ([]Account, error) {
+	var accounts []Account
 	if err := db.Where("is_enabled = ?", enabled).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
@@ -187,7 +192,7 @@ func GetAccountId(account Account) uint {
 }
 
 func GetAccount(account *Account) error {
-	if err != db.Where(account).First(account).Error; err != nil {
+	if err := db.Where(account).First(account).Error; err != nil {
 		return err
 	}
 	return nil
@@ -226,7 +231,7 @@ func InsertAccount(account *Account) error {
 	if err := db.Create(account).Error; err != nil {
 		return err
 	}
-	account.ID = GetAccountId(&Account{ Username: account.Username })
+	account.ID = GetAccountId(Account{ Username: account.Username })
 	if account.ID == 0 {
 		return errors.New("failed to insert")
 	}
@@ -238,7 +243,7 @@ func InsertAccount(account *Account) error {
 // 1. account.ID = GetAccountId(Account{Username: account.Username})
 // 2. SaveAccount(account)
 func UpdateAccount(account Account) error {
-	if err := db.Model(&account).Omit("password, is_activated, is_enabled, is_locked").Updates(account); err != nil {
+	if err := db.Model(&account).Omit("password, is_activated, is_enabled, is_locked").Updates(account).Error; err != nil {
 		return err
 	}
 	return nil
@@ -246,7 +251,7 @@ func UpdateAccount(account Account) error {
 
 func UpdatePassword(account *Account) error {
 	encrypted := encryptText(account.Password)
-	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
+	condition := Account{gorm.Model{ID: account.ID}, Username: account.Username, Email: account.Email, Phone: account.Phone}
 	if err := db.Where(&condition).Update("password", encrypted).Error; err != nil {
 		return err
 	}
@@ -256,7 +261,7 @@ func UpdatePassword(account *Account) error {
 
 func UpdateAcitvatedState(account Account) error {
 	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_activated", account.IsActivated); err != nil {
+	if err := db.Where(&condition).Update("is_activated", account.IsActivated).Error; err != nil {
 		return err
 	}
 	return nil
@@ -264,7 +269,7 @@ func UpdateAcitvatedState(account Account) error {
 
 func UpdateEnabledState(account Account) error {
 	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_enabled", account.IsEnabled); err != nil {
+	if err := db.Where(&condition).Update("is_enabled", account.IsEnabled).Error; err != nil {
 		return err
 	}
 	return nil
@@ -272,14 +277,14 @@ func UpdateEnabledState(account Account) error {
 
 func UpdateLockedState(account Account) error {
 	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_locked", account.IsLocked); err != nil {
+	if err := db.Where(&condition).Update("is_locked", account.IsLocked).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func SaveAccount(account Account) error {
-	if err := db.Save(&account); err != nil {
+	if err := db.Save(&account).Error; err != nil {
 		return err
 	}
 	return nil
