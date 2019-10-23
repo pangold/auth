@@ -4,8 +4,8 @@ import (
 	"./content"
 )
 
-func GetVerificationText(company, module, code string) string {
-	return content.GetVerificationText(company, module, code)
+func GetVerificationText(company, code string) string {
+	return content.GetVerificationText(company, code)
 }
 
 func GetActivationText(company, url string) string {

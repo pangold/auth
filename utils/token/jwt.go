@@ -13,7 +13,6 @@ type JwtToken struct {
 }
 
 func UseJwtToken(secretKey string) Token {
-	fmt.Println("use jwt token")
 	return JwtToken{SecretKey: secretKey}
 }
 

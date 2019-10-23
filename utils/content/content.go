@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func GetVerficationText(company, module, code string) string {
-	text := fmt.Sprintf("[%s] %s，%s verfication code, available in 10 minutes", company, code, module)
+func GetVerificationText(company, code string) string {
+	text := fmt.Sprintf("[%s]，verfication code %s, available in 10 minutes", company, code)
 	return text
 }
 

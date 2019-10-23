@@ -1,26 +1,25 @@
 package utils
 
 import (
-	"time"
 	"./cache"
 )
 
 var (
-	c *Cache
+	c cache.Cache
 )
 
 func init() {
 	c = cache.UseSimpleCache()
 }
 
-func HasCacheKey(service, action, key string) bool {
-	return c.HasCacheKey(service, action, key)
+func HasCacheKey(service, key string) bool {
+	return c.HasCacheKey(service, key)
 }
 
-func GetCacheValue(service, action, key string, value *string) error {
-	return c.GetCacheValue(service, action, key, value)
+func GetCacheValue(service, key string, vtype interface{}) (interface{}, error) {
+	return c.GetCacheValue(service, key, vtype)
 }
 
-func SetCacheValue(service, action, key, value string, timeout int) error {
-	return c.SetCacheValue(service, action, key, value, timeout)
+func SetCacheValue(service, key string, value interface{}, expire int) error {
+	return c.SetCacheValue(service, key, value, expire)
 }

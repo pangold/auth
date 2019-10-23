@@ -1,55 +1,38 @@
 package token
 
 import (
-	"fmt"
 	"errors"
 	"strings"
 
-	"github.com/gomodule/redigo/redis"
+	"../cache"
 )
 
 type MyToken struct {
-	conn redis.Conn
-}
-
-func UseMyTokenWithError(hostName string) (Token, error) {
-	fmt.Println("use my token")
-	c, err := redis.Dial("tcp", hostName)
-	if err != nil {
-		return nil, err
-	}
-	// FIXME: conn.Close()
-	return MyToken{conn: c}, nil
+	c cache.Cache
 }
 
 func UseMyToken(hostName string) Token {
-	token, err := UseMyTokenWithError(hostName)
-	if err != nil {
-		return nil
-	}
-	return token
+	cc := cache.UseRedigoCache(hostName)
+	// if using simple cache, exipre will be invalid
+	// cc := cache.UseSimpleCache() 
+	return MyToken{c: cc}
 }
 
 func (mt MyToken) GenerateToken(userId, userName string, expire int) (string, error) {
-	key := GenerateRandomString(64) // key is token
+	token := GenerateRandomString(64) // key is token
 	value := userId + "," + userName
-	if _, err := mt.conn.Do("SET", key, value); err != nil {
+	if err := mt.c.SetCacheValue("token", token, value, expire); err != nil {
 		return "", err
 	}
-	// set expire time
-	if _, err := mt.conn.Do("EXPIRE", key, expire); err != nil {
-		mt.conn.Do("DEL", key)
-		return "", err
-	}
-	return key, nil
+	return token, nil
 }
 
 func (mt MyToken) ExplainToken(token string, userId, userName *string) error {
-	v, err := redis.String(mt.conn.Do("GET", token))
+	v, err := mt.c.GetCacheValue("token", token, string(""))
 	if err != nil {
 		return err
 	}
-	kv := strings.Split(v, ",")
+	kv := strings.Split(v.(string), ",")
 	if len(kv) != 2 {
 		return errors.New("invalid value")
 	}
@@ -58,7 +41,7 @@ func (mt MyToken) ExplainToken(token string, userId, userName *string) error {
 }
 
 func (mt MyToken) ResetToken(token string) error {
-	if _, err := mt.conn.Do("DEL", token); err != nil {
+	if err := mt.c.ResetCache("token", token); err != nil {
 		return err
 	}
 	return nil

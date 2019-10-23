@@ -1,32 +1,46 @@
 package cache
 
 import (
-	"fmt"
+	"errors"
 )
 
+var (
+	storage map[string]interface{}
+)
 
-type SimpleCache struct {
-	storage map[string]string
+type SimpleCache struct {}
+
+
+func UseSimpleCache() Cache {
+	if storage == nil {
+		storage = make(map[string]interface{})
+	}
+	return SimpleCache{}
 }
 
-func (sc SimpleCache) HasCacheKey(service, action, key string) bool {
-	k := sc.generateCacheKey(service, action, key)
-	_, ok := sc.storage[k]
+func (sc SimpleCache) HasCacheKey(service, key string) bool {
+	k := generateCacheKey(service, key)
+	_, ok := storage[k]
 	return ok
 }
 
-func (sc RedisCache) GetCacheValue(service, action, key string, value *string) error {
-	k := sc.generateCacheKey(service, action, key)
-	*value = sc.storage[k]
+func (sc SimpleCache) SetCacheValue(service, key string, value interface{}, expire int) error {
+	k := generateCacheKey(service, key)
+	storage[k] = value
 	return nil
 }
 
-func (sc *SimpleCache) SetCacheValue(service, action, key, value string, timeout int) error {
-	k := sc.generateCacheKey(service, action, key)
-	sc.storage[k] = value
-	return nil
+func (sc SimpleCache) GetCacheValue(service, key string, vtype interface{}) (interface{}, error) {
+	k := generateCacheKey(service, key)
+	v, ok := storage[k]
+	if !ok {
+		return nil, errors.New("key " + k + " is not exist")
+	}
+	return v, nil
 }
 
-func (SimpleCache) generateCacheKey(service, action, key string) string {
-	return fmt.Sprintf("%s.%s.%s", service, action, key)
+func (sc SimpleCache) ResetCache(service, key string) error {
+	k := generateCacheKey(service, key)
+	delete(storage, k)
+	return nil
 }
