@@ -9,7 +9,7 @@ var (
 )
 
 func init() {
-	c = cache.UseSimpleCache()
+	c = cache.UseRedigoCache("127.0.0.1:6379")
 }
 
 func HasCacheKey(service, key string) bool {
@@ -22,4 +22,8 @@ func GetCacheValue(service, key string, vtype interface{}) (interface{}, error) 
 
 func SetCacheValue(service, key string, value interface{}, expire int) error {
 	return c.SetCacheValue(service, key, value, expire)
+}
+
+func ResetCache(service, key string) error {
+	return c.ResetCache(service, key)
 }

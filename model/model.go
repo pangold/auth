@@ -22,3 +22,38 @@ func generateUsername() string {
 func encryptText(text string) string {
 	return utils.GenerateMD5String(text)
 }
+
+func ConnectDB(uname, pwd, host, dbName string, port int) {
+	db = utils.ConnectDB(uname, pwd, host, dbName, port)
+}
+
+func MigrateAccount() {
+	db.AutoMigrate(&Account{})
+}
+
+func DropTable(name string) error {
+	return db.DropTable(name).Error
+}
+
+func HasTable(name string) bool {
+	return db.HasTable(name)
+}
+
+func CreateTableAccount() error {
+	if err := db.CreateTable(&Account{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func DropTableAccount() error {
+	if err := db.DropTable(&Account{}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+func HasTableAccount() bool {
+	return db.HasTable(&Account{})
+}
+

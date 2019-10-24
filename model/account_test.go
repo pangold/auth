@@ -5,152 +5,171 @@ import (
 	"testing"
 )
 
-func TestAutoSave(t *testing.T) {
-	account := model.Account{Username: "Ai3ueJSKt6", Email: "omg@gmail.com", Phone: "13888888888", Password: "88888888", IsActivated: false, IsEnabled: false, IsLocked: false}
-	if err := model.SaveAccount(&account); err != nil {
-		fmt.Println(err)
+func init() {
+	// drop account_test table
+	if err := DropTable("accounts"); err != nil {
+		fmt.Printf("drop table error: %v\n", err)
 	}
-	fmt.Println(account)
-	account.Email = "god@gmail.com"
-	fmt.Println(account)
-	if err := model.SaveAccount(&account); err != nil {
-		fmt.Println(err)
+	// migrate new account_table
+	db.AutoMigrate(&Account{})
+}
+
+func TestInsertAccount(t *testing.T) {
+	account1 := Account{Username: "Ai3ueJSKt6", Email: "omg@gmail.com", Phone: "13888888888", Password: "88888888", IsActivated: true, IsEnabled: true, IsLocked: false}
+	if err := InsertAccount(&account1); err != nil {
+		t.Errorf("insert account1 error: %v", err)
+	}
+	account2 := Account{Email: "omg2@gmail.com", Password: "88888888", IsActivated: false, IsEnabled: false, IsLocked: false}
+	if err := InsertAccount(&account2); err != nil {
+		t.Errorf("insert account2 error: %v", err)
+	}
+	account3 := Account{Phone: "13999999999", Password: "88888888", IsActivated: false, IsEnabled: false, IsLocked: false}
+	if err := SaveAccount(&account3); err != nil {
+		t.Errorf("insert account3 error: %v", err)
+	}
+	account4 := Account{Phone: "13777777777", Password: "88888888", IsActivated: false, IsEnabled: false, IsLocked: false}
+	if err := SaveAccount(&account4); err != nil {
+		t.Errorf("insert account4 error: %v", err)
 	}
 }
 
-func TestQuery(t *testing.T) {
-	var err error
-	var accounts, accounts2, accounts3, accounts4 []model.Account
-	accounts, err = model.GetAccounts()
+func TestQueryAllAccounts(t *testing.T) {
+	accounts, err := GetAccounts()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Errorf("query all accounts error: %v", err)
 	}
-	for _, account := range accounts {
-		fmt.Println(account)
+	if len(accounts) != 4 {
+		t.Errorf("unexpected amount of accounts")
 	}
-	//
-	accounts2, err = model.GetActivatedAccounts(false)
+	if accounts[0].Username != "Ai3ueJSKt6" {
+		t.Errorf("unexpected username: %v", accounts[0])
+	}
+	if accounts[1].Email != "omg2@gmail.com" {
+		t.Errorf("unexpected email: %v", accounts[1])
+	}
+	if accounts[2].Phone != "13999999999" {
+		t.Errorf("unexpected phone number: %v", accounts[2])
+	}
+	if accounts[3].Phone != "13777777777" {
+		t.Errorf("unexpected phone number: %v", accounts[3])
+	}
+}
+
+func TestQueryValidAccounts(t *testing.T) {
+	accounts, err := GetValidAccounts()
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Errorf("query valid accounts error: %v", err)
 	}
-	for _, account := range accounts2 {
-		fmt.Println(account)
+	if len(accounts) != 1 {
+		t.Errorf("unexpected amount of accounts")
 	}
-	//
-	accounts3, err = model.GetEnabledAccounts(false)
+}
+
+func TestQueryActivatedAccounts(t *testing.T) {
+	accounts, err := GetActivatedAccounts(true)
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Errorf("query activated accounts error: %v", err)
 	}
-	for _, account := range accounts3 {
-		fmt.Println(account)
+	if len(accounts) != 1 {
+		t.Errorf("unexpected amount of accounts")
 	}
-	//
-	accounts4, err = model.GetLockedAccounts(false)
+}
+
+func TestQueryAccountId(t *testing.T) {
+	accountId := GetAccountId(Account{Username: "Ai3ueJSKt6"})
+	if accountId == 0 {
+		t.Errorf("query account id error")
+	}
+	if accountId != 1 {
+		t.Errorf("unexpected account id, expected: %d, actual: %d", 1, accountId)
+	}
+}
+
+func TestQueryAccount(t *testing.T) {
+	account, err := GetAccount(Account{Username: "Ai3ueJSKt6"})
 	if err != nil {
-		fmt.Println(err.Error())
+		t.Errorf("query account id error: %v", err)
 	}
-	for _, account := range accounts4 {
-		fmt.Println(account)
+	if account.ID != 1 {
+		t.Errorf("unexpected account id, expected: %d, actual: %d", 1, account.ID)
 	}
-	//
-	account, _ := model.GetAccountByPhone("13888888888")
-	fmt.Println(account)
-	// 
-	account2, _ := model.GetAccountByUsername("Ai3ueJSKt6")
-	fmt.Println(account2)
-	//
-	account3, _ := model.GetAccountByEmail("god@gmail.com")
-	fmt.Println(account3)
-	//
-	var id1, id2, id3 uint
-	id1 = model.GetAccountIdByPhone("13888888888")
-	fmt.Println(id1)
-	id2 = model.GetAccountIdByUsername("Ai3ueJSKt6")
-	fmt.Println(id2)
-	id3 = model.GetAccountIdByEmail("god@gmail.com")
-	fmt.Println(id3)
 }
 
-func TestPasswordMatch(t *testing.T) {
-	// With correct/incorrect password
-	var err error
-	var account10, account11, account12 *model.Account
-	if account10, err = model.MatchPhoneAndPassword("13888888888", "88888888"); err != nil {
-		fmt.Println(err.Error())
+func TestVerifyAccountWithPassword(t *testing.T) {
+	account, _ := VerifyAccountWithPassword(Account{Username: "Ai3ueJSKt6", Password: "88888888"})
+	if account == nil {
+		t.Errorf("unmatched account(%s) and password(%s)", account.Username, account.Password)
 	}
-	if account11, err = model.MatchUsernameAndPassword("Ai3ueJSKt6", "88888888"); err != nil {
-		fmt.Println(err.Error())
+	account2, _ := VerifyAccountWithPassword(Account{Phone: "13777777777", Password: "88888888"})
+	if account2 != nil {
+		t.Errorf("verification should be fail, but the actual is not")
 	}
-	if account12, err = model.MatchEmailAndPassword("god@gmail.com", "8888888"); err != nil { // incorrect
-		fmt.Println(err.Error())
-	}
-	fmt.Println("MatchXXXAndPassword Begin")
-	fmt.Println(account10)
-	fmt.Println(account11)
-	fmt.Println(account12)
-	fmt.Println("MatchXXXAndPassword End")
 }
 
-func TestInsert(t *testing.T) {
-	fmt.Println("TestInsert Begin")
-	account := model.Account{Username: "1234567890", Password: "88888888"}
-	if err := model.InsertAccount(&account); err != nil {
-		fmt.Println(err.Error())
+func TestIsAccountExist(t *testing.T) {
+	if !IsAccountExist(Account{Username: "Ai3ueJSKt6"}) {
+		t.Errorf("account [%s] should be exist", "Ai3ueJSKt6")
 	}
-	fmt.Println(account)
-	fmt.Println("TestInsert End")
+	if IsAccountExist(Account{Phone: "1111"}) {
+		t.Errorf("account [1111] should not be exist")
+	}
 }
 
-func TestInsertAndUpdate(t *testing.T) {
-	fmt.Println("TestInsertAndUpdate Begin")
-	account := model.Account{Email: "x@111.com", Phone: "13111111111", Username: "pandora", Password: "12345678"}
-	if err := model.InsertAccount(&account); err != nil {
-		fmt.Println(err.Error())
+func TestUpdateAccount(t *testing.T) {
+	account, err := GetAccount(Account{Phone: "13777777777"})
+	if err != nil {
+		t.Errorf("account query error: %v", err)
+		return
 	}
-	fmt.Println(account)
-	account.Email = "pangold@163.com"
-	account.Phone = "18828883888"
-	if err := model.UpdateAccount(&account); err != nil {
-		fmt.Println(err.Error())
+	account.Email = "123@gmail.com"
+	account.Username = "1234567890"
+	account.IsActivated = true
+	if err = UpdateAccount(*account); err != nil {
+		t.Errorf("update account error: %v", err)
 	}
-	//
-	account2, _ := model.GetAccountByEmail("pangold@163.com")
-	fmt.Println(account2)
-	fmt.Println("TestInsertAndUpdate End")
+	account.IsActivated = false
+	if err = UpdateAccount(*account); err != nil {
+		t.Errorf("update account error: %v", err)
+	}
 }
 
-func TestUpdateStatus(t *testing.T) {
-	var err error
-	var account model.Account
-	if account, err = model.GetAccountByUsername("1234567890"); err != nil {
-		fmt.Println(err.Error())
+func TestUpdatePassword(t *testing.T) {
+	if err := UpdatePassword(Account{Email: "omg2@gmail.com", Password: "888888"}); err != nil {
+		t.Errorf("update password error: %v", err)
 	}
-	fmt.Println(account)
-	//
-	account.Email = "abcd@gmail.com"
-	account.Phone = "13538283577"
-	if err = model.SaveAccount(&account); err != nil {
-		fmt.Println(err.Error())
+	if err := UpdateActivatedState(Account{Email: "omg2@gmail.com", IsActivated: true}); err != nil {
+		t.Errorf("update activated state error: %v", err)
 	}
-	fmt.Println(account)
-	//
-	if err = model.EnableAccount(&account); err != nil {
-		fmt.Println(err.Error())
+	if err := UpdateEnabledState(Account{Email: "omg2@gmail.com", IsEnabled: true}); err != nil {
+		t.Errorf("update enabled state error: %v", err)
 	}
-	fmt.Println(account)
-	//
-	if err = model.ActivateAccount(&account); err != nil {
-		fmt.Println(err.Error())
+	if err := UpdateLockedState(Account{Email: "omg2@gmail.com", IsLocked: false}); err != nil {
+		t.Errorf("update locked state error: %v", err)
 	}
-	fmt.Println(account)
-	//
-	if err = model.LockAccount(&account); err != nil {
-		fmt.Println(err.Error())
+	if account, err := VerifyAccountWithPassword(Account{Email: "omg2@gmail.com", Password: "88888888"}); account != nil {
+		t.Errorf("password has been updated, shouldn't be matched, error: %v", err)
 	}
-	fmt.Println(account)
-	//
-	//if err = model.DeleteAccount(&account); err != nil {
-	//	fmt.Println(err.Error())
-	//}
-	//fmt.Println(account)
+	if account, err := VerifyAccountWithPassword(Account{Email: "omg2@gmail.com", Password: "888888"}); account == nil {
+		t.Errorf("new password should be matched, error: %v", err)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	account, err := GetAccount(Account{Email: "omg2@gmail.com"})
+	if err != nil {
+		t.Errorf("get account error: %v", err)
+	}
+	if err = DeleteAccount(*account); err != nil {
+		t.Errorf("delete error: %v", err)
+	}
+}
+
+func TestDeleteForever(t *testing.T) {
+	account, err := GetAccount(Account{Phone: "13999999999"})
+	if err != nil {
+		t.Errorf("get account error: %v", err)
+	}
+	if err = DeleteAccountForever(*account); err != nil {
+		t.Errorf("delete error: %v", err)
+	}
 }

@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"errors"
+	"strconv"
 	"../utils"
 	"../model"
 )
@@ -12,17 +14,17 @@ import (
 func RequirePhoneCode(phone string) error {
 	// Check if this phone number had required
 	if utils.HasCacheKey("account", phone) {
-		return "too frequent, please try again later."
+		return errors.New("requires too frequent.")
 	}
 	// Generate a verification code, and save into Cache
 	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", phone, code, 60 * 60 * 2); err != nil {
-		return err
+	if err := utils.SetCacheValue("account", phone, code, 60 * 10); err != nil {
+		return errors.New("set cache value error: " + err.Error())
 	}
 	// Use SMS to send mobile short message
 	content := utils.GetVerificationText("Corp", code)
 	if err := utils.SendSMS(phone, content); err != nil {
-		return err
+		return errors.New("send sms error: " + err.Error())
 	}
 	return nil
 }
@@ -32,17 +34,17 @@ func RequirePhoneCode(phone string) error {
 func RequireEmailCode(email string) error {
 	// Check if this email had required
 	if utils.HasCacheKey("account", email) {
-		return "Require too frequent, please try again later."
+		return errors.New("requires too frequent.")
 	}
 	// Generate a verification code, and save into Cache
 	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", email, code, 60); err != nil {
-		return err
+	if err := utils.SetCacheValue("account", email, code, 60 * 10); err != nil {
+		return errors.New("set cache value error: " + err.Error())
 	}
 	// Use Email service to send an email
 	content := utils.GetVerificationText("Corp", code)
 	if err := utils.SendEmail(email, content); err != nil {
-		return err
+		return errors.New("send email error: " + err.Error())
 	}
 	return nil
 }
@@ -72,111 +74,118 @@ func RequireEmailCode(email string) error {
 //    5) done.
 
 // situation a
-func Register(email, password, activateUrl string) error {
+func Register(email, password, activateUrl string) (string, error) {
 	// FIXME: temp implementation for dealing with password verification
-	account := model.Account{ Email: email, Password: password, IsActivated: false }
-	if !account.IsPasswordValid() {
-		return errors.New("invalid password format")
+	account := model.Account{ Email: email, Password: password, IsActivated: false, IsEnabled: true, IsLocked: false }
+	if err := account.IsPasswordValid(); err != nil {
+		return "", errors.New("registration error: " + err.Error())
 	}
 	// FIXME: replace model to middleware(because of cache)
 	if model.IsAccountExist(model.Account{Email: email}) {
-		return err
+		return "", errors.New("registration error: " + email + " is exist")
 	}
 	// FIXME: 
 	if err := model.InsertAccount(&account); err != nil {
-		return err
+		return "", errors.New("registration error: " + err.Error())
 	}
+	return GenerateActivationCode(email, activateUrl)
+}
+
+// situation a (step 2)
+func GenerateActivationCode(email, activateUrl string) (string, error) {
 	// generate an activation code
 	code := utils.GenerateRandomString(64)
-	if err := utils.SetCacheValue("account", "registration", code, email, 60); err != nil {
-		// FIXME: Rollback? or?
-		return errors.New("failed to save activation code.")
+	// 3 days
+	if err := utils.SetCacheValue("account", code, email, 60 * 60 * 24 * 3); err != nil {
+		return "", errors.New("save activation code error: " + err.Error())
 	}
 	// url: http://example.com/service/action?code=code
 	// action in activateUrl supposes to be mapped to ActivateAccountWithHashCode below.
 	url := fmt.Sprintf("%s?code=%s", activateUrl, code)
+	// FIXME: company
 	content := utils.GetActivationText("company", url)
+	fmt.Println(content)
 	if err := utils.SendEmail(email, content); err != nil {
-		// FIXME: Rollback? or?
-		return errors.New("failed to send email")
+		return "", errors.New("send activation link(by email) error: " + err.Error())
 	}
-	return nil
+	return code, nil
 }
 
 // after Register(situation a) do
 func ActivateAccountWithHashCode(code string) error {
 	// see above to see how the code be saved in cache.
-	var email string
-	if err := utils.GetCacheValue("account", "registration", code, &email); err != nil {
-		return err
+	email, err := utils.GetCacheValue("account", code, string(""))
+	if err != nil {
+		return errors.New("invalid verification code")
 	}
 	// FIXME:
-	if err := model.UpdateActivatedState(model.Account{Email: email, IsActivated: true}); err != nil {
+	if err := model.UpdateActivatedState(model.Account{Email: email.(string), IsActivated: true}); err != nil {
 		return err
 	}
+	utils.ResetCache("account", code)
 	return nil
 }
 
 // situation b
 func RegisterWithEmailAndCode(email, password, code string) error {
-	// check if the code is valid
-	var saved string
-	if err = utils.GetCacheValue("account", "verify", email, &saved); err != nil {
-		return errors.New("unmatched verification code.")
+	saved, err := utils.GetCacheValue("account", email, string(""))
+	if err != nil {
+		return errors.New("registration error: invalid verification code.")
 	}
-	if saved == code {
-		return errors.New("invalid verification code.")
+	if saved.(string) != code {
+		return errors.New("registration error: unmatched verification code.")
 	}
 	// FIXME: 
 	if model.IsAccountExist(model.Account{Email: email}) {
-		return err
+		return errors.New("registration error: " + email + " is exist")
 	}
 	// FIXME: 
-	account := model.Account{ Email: email, Phone: phone, Password: password, IsActivated: true }
+	account := model.Account{ Email: email, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
 	if err := model.InsertAccount(&account); err != nil {
-		return err
+		return errors.New("registration error: saving info failure")
 	}
+	utils.ResetCache("account", email)
 	return nil
 }
 
 // situation c
 func RegisterWithPhoneAndCode(phone, password, code string) error {
-	// check if the code is valid
-	var saved string
-	if err = utils.GetCacheValue("account", "verify", phone, &saved); err != nil {
-		return errors.New("unmatched verification code.")
+	saved, err := utils.GetCacheValue("account", phone, string(""))
+	if err != nil {
+		return errors.New("registration error: invalid verification code.")
 	}
-	if saved == code {
-		return errors.New("invalid verification code.")
+	if saved.(string) != code {
+		return errors.New("registration error: unmatched verification code.")
 	}
 	// FIXME: 
 	if model.IsAccountExist(model.Account{Phone: phone}) {
-		return err
+		return errors.New("registration error: " + phone + " is exist")
 	}
 	// FIXME: 
-	account := model.Account{ Email: email, Phone: phone, Password: password, IsActivated: true }
+	account := model.Account{ Phone: phone, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
 	if err := model.InsertAccount(&account); err != nil {
-		return err
+		return errors.New("registration error: saving info failure")
 	}
+	utils.ResetCache("account", phone)
 	return nil
 }
 
 // situation d
 func RegisterWithUsername(username, email, phone, password string) error {
 	// FIXME: 
-	if model.IsAccountExist(model.Account{Username: username}) {
-		return err
+	if len(username) > 0 && model.IsAccountExist(model.Account{Username: username}) {
+		return errors.New("registration error: " + username + " is exist")
 	}
 	// FIXME: 
-	if model.IsAccountExist(model.Account{Email: email}) {
-		return err
+	if len(email) > 0 && model.IsAccountExist(model.Account{Email: email}) {
+		return errors.New("registration error: " + email + " is exist")
 	}
 	// FIXME: 
-	if model.IsAccountExist(model.Account{Phone: phone}) {
-		return err
+	if len(phone) > 0 && model.IsAccountExist(model.Account{Phone: phone}) {
+		return errors.New("registration error: " + phone + " is exist")
 	}
 	// FIXME: 
-	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password, IsActivated: true }
+	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
 	if err := model.InsertAccount(&account); err != nil {
 		return err
 	}
@@ -187,37 +196,45 @@ func RegisterWithUsername(username, email, phone, password string) error {
 // 1. fill login form with UserId/Email/Phone, and submit(POST)
 // 2. server side handle the this requirement.
 // 3. response token or error text
-func Login(username, email, phone, password string, token *string) error {
+func Login(username, email, phone, password string) (string, error) {
 	// FIXME: 
 	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password }
-	if err := model.VerifyAccountWithPassword(&account); err != nil {
-		return err
+	res, err := model.VerifyAccountWithPassword(account)
+	if err != nil {
+		return "", errors.New("login error: username or password is wrong")
 	}
 	// Further feature: 
 	// if unmatched times > 5, account will be locked(implements in the futher)
-	*token = utils.GenerateToken(account.ID, account.Username)
-	return nil
+	token, err2 := utils.GenerateToken(strconv.Itoa(int(res.ID)), res.Username, 60 * 60 * 24 * 30) // 30 days
+	if err2 != nil {
+		return "", errors.New("login error: unable to generate token")
+	}
+	return token, nil
 }
 
-// feature for the futher... 
-// you will need to answer some questions to unlock.
-// think about what questions I should use?
-func UnlockAccount(username, email, phone string) error {
-	// FIXME: 
-	account := model.Account{ Username: username, Email: email, Phone: phone }
-	if err := model.UpdateLockedState(account); err != nil {
-		return errors.New("failed to unlock account")
+func Logout(token string) error {
+	if err := utils.ResetToken(token); err != nil {
+		return errors.New("logout error: " + err.Error())
 	}
 	return nil
 }
 
-// If just only use JWT, there is nothing we can do, because everything is useless. 
-// JWT itself has expired time
-func Logout(userId, email, phone string) error {
-	// If JWT, there is no way to logout in server side, unless JWT had expired.
-	// The only way is through client side
-	// Or use Redis to store it when logged in, and remove it here.
-	// But that is not a good way to use JWT. Annoyance...
+func EnabledAccount(username, email, phone string, enabled bool) error {
+	// FIXME: 
+	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: enabled }
+	if err := model.UpdateLockedState(account); err != nil {
+		return errors.New("enable error: " + err.Error())
+	}
+	return nil
+}
+
+func LockAccount(username, email, phone string, locked bool) error {
+	// FIXME: 
+	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: locked }
+	if err := model.UpdateLockedState(account); err != nil {
+		return errors.New("unlock error: " + err.Error())
+	}
+	return nil
 }
 
 // How Forgot Password Works?
@@ -240,55 +257,57 @@ func Logout(userId, email, phone string) error {
 
 // situation a
 func ForgotWithCode(email, phone, password, code string) error {
-	var identifier, saved string
+	var identifier string
 	// only one of email and phone is available, then the other one supposes to be empty
 	if identifier = email; len(identifier) == 0 {
 		identifier = phone
 	}
-	if err := utils.GetCacheValue("account", "verify", identifier, &saved); err != nil {
-		return errors.New("unmatched verification code.")
+	saved, err := utils.GetCacheValue("account", identifier, string(""))
+	if err != nil {
+		return errors.New("forgot error: invalid verification code.")
 	}
 	if saved != code {
-		return errors.New("invalid verification code.")
+		return errors.New("forgot error: unmatched verification code.")
 	}
 	// FIXME: 
 	// update password
-	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password }
-	if err := model.UpdatePassword(&account); err != nil {
-		return errors.New("failed to update password")
+	if err := model.UpdatePassword(model.Account{Email: email, Phone: phone, Password: password}); err != nil {
+		return errors.New("forgot error: " + err.Error())
 	}
+	utils.ResetCache("account", identifier)
 	return nil
 }
 
 // situation b
-func Forgot(email, pageUrl string) error {
+func Forgot(email, pageUrl string) (string, error) {
 	// generate hash code(key: hash_code, value: email)
 	code := utils.GenerateRandomString(64)
-	if err := utils.SetCacheValue("account", "forgot", code, email); err != nil {
-		return err
+	if err := utils.SetCacheValue("account", code, email, 60 * 10); err != nil {
+		return "", err
 	}
 	// url: http://example.com/account/action?code=code
 	// action in pageUrl supposes to be mapped to ResetPasswordByHashCode below.
 	url := fmt.Sprintf("%s?code=%s", pageUrl, code)
 	content := utils.GetForgotPasswordText("company", url)
 	if err := utils.SendEmail(email, content); err != nil {
-		return err
+		return "", err
 	}
-	return nil
+	return code, nil
 }
 
 // after Forgot(situation b)
 func ResetPasswordByHashCode(code, password string) error {
 	// get email by hashcode(key: hash_code, value: email)
-	var email string
-	if err := utils.GetCacheValue("account", "forgot", code, &email); err != nil {
-		return err
+	email, err := utils.GetCacheValue("account", code, "")
+	if err != nil {
+		return errors.New("reset error: " + err.Error())
 	}
 	// FIXME: 
 	// update password
-	if err := model.UpdatePassword(&Account{ Email: email, Password: password }); err != nil {
+	if err := model.UpdatePassword(model.Account{Email: email.(string), Password: password}); err != nil {
 		return err
 	}
+	utils.ResetCache("account", code)
 	return nil
 }
 

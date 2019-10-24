@@ -45,7 +45,7 @@ func (a *Account) BeforeDelete() error {
 
 // Column Verification
 func (a *Account) IsUsernameValid() error {
-	if len(a.Username) < 6 {
+	if len(a.Username) < 4 {
 		return errors.New("username is too short.")
 	}
 	return nil
@@ -154,7 +154,7 @@ func GetValidAccounts() ([]Account, error) {
 func GetAccountsByState(account Account) ([]Account, error) {
 	var accounts []Account
 	// in those 3 states are bool: we can't get data if value = false
-	if err := db.Where("is_activate = ? and is_locked = ? and is_enabled = ?", account.IsActivated, account.IsLocked, account.IsEnabled).Find(&accounts).Error; err != nil {
+	if err := db.Where("is_activated = ? and is_locked = ? and is_enabled = ?", account.IsActivated, account.IsLocked, account.IsEnabled).Find(&accounts).Error; err != nil {
 		return nil, err
 	}
 	return accounts, nil
@@ -185,33 +185,37 @@ func GetEnabledAccounts(enabled bool) ([]Account, error) {
 }
 
 func GetAccountId(account Account) uint {
-	if err := db.Select("id").Where(&account).First(&account).Error; err != nil {
+	var res Account
+	if err := db.Select("id").Where(&account).First(&res).Error; err != nil {
 		return 0
 	}
-	return account.ID
+	return res.ID
 }
 
-func GetAccount(account *Account) error {
-	if err := db.Where(account).First(account).Error; err != nil {
-		return err
+func GetAccount(account Account) (*Account, error) {
+	var res Account
+	if err := db.Where(account).First(&res).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return &res, nil
 }
 
-func VerifyAccountWithPassword(account *Account) error {
+func VerifyAccountWithPassword(account Account) (*Account, error) {
+	var res Account
 	encrypted := encryptText(account.Password)
 	// password doesn't have index, so...
 	account.Password = ""
-	if err := db.Where(account).First(account).Error; err != nil {
-		return errors.New("invalid account")
+	if err := db.Where(&account).First(&res).Error; err != nil {
+		return nil, errors.New("account is not exist")
 	}
-	if err := account.IsStateValid(); err != nil {
-		return err
+	if res.Password != encrypted {
+		// fmt.Printf("%s\n%s\n", res.Password, encrypted)
+		return nil, errors.New("invalid password")
 	}
-	if account.Password == encrypted {
-		return errors.New("invalid password")
+	if err := res.IsStateValid(); err != nil {
+		return nil, errors.New("account state is invalid")
 	}
-	return nil
+	return &res, nil
 }
 
 func IsAccountExist(account Account) bool {
@@ -238,72 +242,80 @@ func InsertAccount(account *Account) error {
 	return nil
 }
 
-// update username, email and phone by ID 
+func SaveAccount(account *Account) error {
+	if len(account.Username) == 0 {
+		account.Username = generateUsername()
+		account.Password = encryptText(account.Password)
+	}
+	if err := db.Save(&account).Error; err != nil {
+		return err
+	}
+	if account.ID == 0 {
+		account.ID = GetAccountId(Account{ Username: account.Username })
+	}
+	return nil
+}
+
+// update by ID 
 // if updates by username, email or phone, do it yourself by following steps
 // 1. account.ID = GetAccountId(Account{Username: account.Username})
 // 2. SaveAccount(account)
 func UpdateAccount(account Account) error {
-	if err := db.Model(&account).Omit("password, is_activated, is_enabled, is_locked").Updates(account).Error; err != nil {
+	if len(account.Password) != 32 {
+		account.Password = encryptText(account.Password)
+	}
+	if err := db.Model(account).Updates(account).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
-func UpdatePassword(account *Account) error {
+func UpdatePassword(account Account) error {
 	encrypted := encryptText(account.Password)
-	condition := Account{gorm.Model{ID: account.ID}, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("password", encrypted).Error; err != nil {
+	condition := Account{Username: account.Username, Email: account.Email, Phone: account.Phone}
+	if err := db.Model(Account{}).Where(&condition).Update("password", encrypted).Error; err != nil {
 		return err
 	}
-	account.Password = encrypted
 	return nil
 }
 
-func UpdateAcitvatedState(account Account) error {
-	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_activated", account.IsActivated).Error; err != nil {
+func UpdateActivatedState(account Account) error {
+	condition := Account{Username: account.Username, Email: account.Email, Phone: account.Phone}
+	if err := db.Model(Account{}).Where(&condition).Update("is_activated", account.IsActivated).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func UpdateEnabledState(account Account) error {
-	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_enabled", account.IsEnabled).Error; err != nil {
+	condition := Account{Username: account.Username, Email: account.Email, Phone: account.Phone}
+	if err := db.Model(Account{}).Where(&condition).Update("is_enabled", account.IsEnabled).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 func UpdateLockedState(account Account) error {
-	condition := Account{ID: account.ID, Username: account.Username, Email: account.Email, Phone: account.Phone}
-	if err := db.Where(&condition).Update("is_locked", account.IsLocked).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
-func SaveAccount(account Account) error {
-	if err := db.Save(&account).Error; err != nil {
+	condition := Account{Username: account.Username, Email: account.Email, Phone: account.Phone}
+	if err := db.Model(Account{}).Where(&condition).Update("is_locked", account.IsLocked).Error; err != nil {
 		return err
 	}
 	return nil
 }
 
 // Soft Delete
-func DeleteAccount(account *Account) error {
+func DeleteAccount(account Account) error {
 	if account.ID == 0 {
 		return errors.New("Invalid account ID")
 	}
 	if err := db.Delete(account).Error; err != nil {
 		return err
 	}
-	account = nil
 	return nil
 }
 
 // Hard Delete
-func DeleteAccountForever(account *Account) error {
+func DeleteAccountForever(account Account) error {
 	// TODO: does it need to confirm ID???
 	if account.ID == 0 {
 		return errors.New("Invalid account ID")
@@ -311,6 +323,5 @@ func DeleteAccountForever(account *Account) error {
 	if err := db.Unscoped().Delete(account).Error; err != nil {
 		return err
 	}
-	account = nil
 	return nil
 }
