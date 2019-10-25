@@ -9,7 +9,8 @@ var (
 )
 
 func init() {
-	c = cache.UseRedigoCache("127.0.0.1:6379")
+	// c = cache.UseRedigoCache("127.0.0.1:6379")
+	c = cache.UseSimpleCache()
 }
 
 func HasCacheKey(service, key string) bool {
