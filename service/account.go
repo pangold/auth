@@ -9,42 +9,33 @@ import (
 )
 
 
-// Require verification code by Phone
-// Registration or Forgot Password will need this function to get verification code
-func RequirePhoneCode(phone string) error {
-	// Check if this phone number had required
-	if utils.HasCacheKey("account", phone) {
-		return errors.New("requires too frequent.")
-	}
-	// Generate a verification code, and save into Cache
-	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", phone, code, 60 * 10); err != nil {
-		return errors.New("set cache value error: " + err.Error())
-	}
-	// Use SMS to send mobile short message
-	content := utils.GetVerificationText("Corp", code)
-	if err := utils.SendSMS(phone, content); err != nil {
-		return errors.New("send sms error: " + err.Error())
-	}
-	return nil
-}
-
 // Require verification code by email
 // Registration or Forgot Password will need this function to get verification code
-func RequireEmailCode(email string) error {
+func RequireVerificationCode(email, phone string) error {
+	identifier, isEmail := email, true
+	if len(identifier) == 0 {
+		identifier, isEmail = phone, false
+	}
 	// Check if this email had required
-	if utils.HasCacheKey("account", email) {
+	if utils.HasCacheKey("account", identifier) {
 		return errors.New("requires too frequent.")
 	}
 	// Generate a verification code, and save into Cache
 	code := utils.GenerateRandomNumber(4)
-	if err := utils.SetCacheValue("account", email, code, 60 * 10); err != nil {
+	if err := utils.SetCacheValue("account", identifier, code, 60 * 10); err != nil {
 		return errors.New("set cache value error: " + err.Error())
 	}
-	// Use Email service to send an email
+	// Send
 	content := utils.GetVerificationText("Corp", code)
-	if err := utils.SendEmail(email, content); err != nil {
-		return errors.New("send email error: " + err.Error())
+	fmt.Println(content)
+	if isEmail {
+		if err := utils.SendEmail(email, content); err != nil {
+			return errors.New("send email error: " + err.Error())
+		}
+	} else {
+		if err := utils.SendSMS(phone, content); err != nil {
+			return errors.New("send sms error: " + err.Error())
+		}
 	}
 	return nil
 }
@@ -126,9 +117,13 @@ func ActivateAccountWithHashCode(code string) error {
 	return nil
 }
 
-// situation b
-func RegisterWithEmailAndCode(email, password, code string) error {
-	saved, err := utils.GetCacheValue("account", email, string(""))
+// situation b & c
+func RegisterWithCode(email, phone, password, code string) error {
+	identifier, isEmail := email, true
+	if len(identifier) == 0 {
+		identifier, isEmail = phone, false
+	}
+	saved, err := utils.GetCacheValue("account", identifier, string(""))
 	if err != nil {
 		return errors.New("registration error: invalid verification code.")
 	}
@@ -136,37 +131,19 @@ func RegisterWithEmailAndCode(email, password, code string) error {
 		return errors.New("registration error: unmatched verification code.")
 	}
 	// FIXME: 
-	if model.IsAccountExist(model.Account{Email: email}) {
-		return errors.New("registration error: " + email + " is exist")
+	account := model.Account{Email: email}
+	if !isEmail {
+		account = model.Account{Phone: phone}
+	}
+	if model.IsAccountExist(account) {
+		return errors.New("registration error: " + identifier + " is exist")
 	}
 	// FIXME: 
-	account := model.Account{ Email: email, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
+	account = model.Account{ Email: email, Phone: phone, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
 	if err := model.InsertAccount(&account); err != nil {
 		return errors.New("registration error: saving info failure")
 	}
-	utils.ResetCache("account", email)
-	return nil
-}
-
-// situation c
-func RegisterWithPhoneAndCode(phone, password, code string) error {
-	saved, err := utils.GetCacheValue("account", phone, string(""))
-	if err != nil {
-		return errors.New("registration error: invalid verification code.")
-	}
-	if saved.(string) != code {
-		return errors.New("registration error: unmatched verification code.")
-	}
-	// FIXME: 
-	if model.IsAccountExist(model.Account{Phone: phone}) {
-		return errors.New("registration error: " + phone + " is exist")
-	}
-	// FIXME: 
-	account := model.Account{ Phone: phone, Password: password, IsActivated: true, IsEnabled: true, IsLocked: false }
-	if err := model.InsertAccount(&account); err != nil {
-		return errors.New("registration error: saving info failure")
-	}
-	utils.ResetCache("account", phone)
+	utils.ResetCache("account", identifier)
 	return nil
 }
 
@@ -289,6 +266,7 @@ func Forgot(email, pageUrl string) (string, error) {
 	// action in pageUrl supposes to be mapped to ResetPasswordByHashCode below.
 	url := fmt.Sprintf("%s?code=%s", pageUrl, code)
 	content := utils.GetForgotPasswordText("company", url)
+	fmt.Println(content)
 	if err := utils.SendEmail(email, content); err != nil {
 		return "", err
 	}

@@ -36,7 +36,7 @@ func TestRegister(t *testing.T) {
 
 func TestRegisterWithEmailAndCode(t *testing.T) {
 	email := "345@gmail.com"
-	if err := RequireEmailCode(email); err != nil {
+	if err := RequireVerificationCode(email, ""); err != nil {
 		t.Errorf(err.Error())
 	}
 	code, err := utils.GetCacheValue("account", email, "")
@@ -44,14 +44,14 @@ func TestRegisterWithEmailAndCode(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if err := RegisterWithEmailAndCode(email, "88888888", code.(string)); err != nil {
+	if err := RegisterWithCode(email, "", "88888888", code.(string)); err != nil {
 		t.Errorf(err.Error())
 	}
 }
 
 func TestRegisterWithPhoneAndCode(t *testing.T) {
 	phone := "13800000000"
-	if err := RequirePhoneCode(phone); err != nil {
+	if err := RequireVerificationCode("", phone); err != nil {
 		t.Errorf(err.Error())
 	}
 	code, err := utils.GetCacheValue("account", phone, "")
@@ -59,7 +59,7 @@ func TestRegisterWithPhoneAndCode(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if err := RegisterWithPhoneAndCode(phone, "88888888", code.(string)); err != nil {
+	if err := RegisterWithCode("", phone, "88888888", code.(string)); err != nil {
 		t.Errorf(err.Error())
 	}
 }
@@ -107,7 +107,7 @@ func TestLogin(t *testing.T) {
 
 func TestForgotWithEmailCode(t *testing.T) {
 	email := "345@gmail.com"
-	if err := RequireEmailCode(email); err != nil {
+	if err := RequireVerificationCode(email, ""); err != nil {
 		t.Errorf(err.Error())
 	}
 	code, err := utils.GetCacheValue("account", email, "")
@@ -122,7 +122,7 @@ func TestForgotWithEmailCode(t *testing.T) {
 
 func TestForgotWithPhoneAndCode(t *testing.T) {
 	phone := "13800000000"
-	if err := RequirePhoneCode(phone); err != nil {
+	if err := RequireVerificationCode("", phone); err != nil {
 		t.Errorf(err.Error())
 	}
 	code, err := utils.GetCacheValue("account", phone, "")
