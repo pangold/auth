@@ -29,7 +29,7 @@ func RequireVerificationCode(email, phone string) error {
 	content := utils.GetVerificationText("Corp", code)
 	fmt.Println(content)
 	if isEmail {
-		if err := utils.SendEmail(email, content); err != nil {
+		if err := utils.SendVerificationEmail(email, content); err != nil {
 			return errors.New("send email error: " + err.Error())
 		}
 	} else {
@@ -96,7 +96,7 @@ func GenerateActivationCode(email, activateUrl string) (string, error) {
 	// FIXME: company
 	content := utils.GetActivationText("company", url)
 	fmt.Println(content)
-	if err := utils.SendEmail(email, content); err != nil {
+	if err := utils.SendActivationEmail(email, content); err != nil {
 		return "", errors.New("send activation link(by email) error: " + err.Error())
 	}
 	return code, nil
@@ -267,7 +267,7 @@ func Forgot(email, pageUrl string) (string, error) {
 	url := fmt.Sprintf("%s?code=%s", pageUrl, code)
 	content := utils.GetForgotPasswordText("company", url)
 	fmt.Println(content)
-	if err := utils.SendEmail(email, content); err != nil {
+	if err := utils.SendForgotEmail(email, content); err != nil {
 		return "", err
 	}
 	return code, nil

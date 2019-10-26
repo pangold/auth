@@ -16,7 +16,7 @@ func init() {
 }
 
 func TestRegister(t *testing.T) {
-	code, err := Register("123@gmail.com", "88888888", "https://sample.com/account/activate")
+	code, err := Register("pangold@163.com", "88888888", "https://sample.com/account/activate")
 	if err != nil {
 		t.Errorf(err.Error())
 		return
@@ -26,7 +26,7 @@ func TestRegister(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if email.(string) != "123@gmail.com" {
+	if email.(string) != "pangold@163.com" {
 		t.Errorf("unmatch email with code")
 	}
 	if err := ActivateAccountWithHashCode(code); err != nil {
@@ -35,7 +35,7 @@ func TestRegister(t *testing.T) {
 }
 
 func TestRegisterWithEmailAndCode(t *testing.T) {
-	email := "345@gmail.com"
+	email := "panking@126.com"
 	if err := RequireVerificationCode(email, ""); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -88,7 +88,7 @@ func TestLogin(t *testing.T) {
 	}
 	fmt.Println("token: " + token)
 	//
-	if token, err = Login("", "123@gmail.com", "", "88888888"); err != nil {
+	if token, err = Login("", "pangold@163.com", "", "88888888"); err != nil {
 		t.Errorf(err.Error())
 	}
 	if err = Logout(token); err != nil {
@@ -96,7 +96,7 @@ func TestLogin(t *testing.T) {
 	}
 	fmt.Println("token: " + token)
 	//
-	if token, err = Login("", "345@gmail.com", "", "88888888"); err != nil {
+	if token, err = Login("", "panking@126.com", "", "88888888"); err != nil {
 		t.Errorf(err.Error())
 	}
 	if err = Logout(token); err != nil {
@@ -106,7 +106,7 @@ func TestLogin(t *testing.T) {
 }
 
 func TestForgotWithEmailCode(t *testing.T) {
-	email := "345@gmail.com"
+	email := "panking@126.com"
 	if err := RequireVerificationCode(email, ""); err != nil {
 		t.Errorf(err.Error())
 	}
@@ -136,7 +136,7 @@ func TestForgotWithPhoneAndCode(t *testing.T) {
 }
 
 func TestForgot(t *testing.T) {
-	code, err := Forgot("123@gmail.com", "https://sample.com/account/activate")
+	code, err := Forgot("pangold@163.com", "https://sample.com/account/activate")
 	if err != nil {
 		t.Errorf(err.Error())
 		return
@@ -146,7 +146,7 @@ func TestForgot(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if email.(string) != "123@gmail.com" {
+	if email.(string) != "pangold@163.com" {
 		t.Errorf("unmatch email with code")
 	}
 	if err := ResetPasswordByHashCode(code, "888888"); err != nil {
