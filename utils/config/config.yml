@@ -1,0 +1,23 @@
+server:
+        port: 8080
+        api-version: v1
+        api-prefix: auth
+jwt:
+        secret-key: MySecretKey
+mysql:
+        username: root
+        password: 88888888
+        host: localhost
+        port: 3306
+        dbname: test1
+redis:
+        host: localhost
+        port: 6379
+email:
+        host: smtp.163.com
+        port: 485
+        address: pangold@163.com
+        password: xxxxxx
+sms:
+        url: https://aaaaaaaaaa.com
+        token: xxxx

@@ -22,7 +22,7 @@ func init() {
 		Host: "smtp.163.com",
 		Port: 465,
 		Email: "pangold@163.com",
-		Pwd: "OMEap67zeA",
+		Pwd: "******",
 	}
 }
 
