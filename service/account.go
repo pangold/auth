@@ -8,6 +8,32 @@ import (
 	"../model"
 )
 
+// How Login Works?
+// 1. fill login form with UserId/Email/Phone, and submit(POST)
+// 2. server side handle the this requirement.
+// 3. response token or error text
+func Login(username, email, phone, password string) (string, error) {
+	// FIXME: 
+	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password }
+	res, err := model.VerifyAccountWithPassword(account)
+	if err != nil {
+		return "", errors.New("login error: username or password is wrong")
+	}
+	// Further feature: 
+	// if unmatched times > 5, account will be locked(implements in the futher)
+	token, err2 := utils.GenerateToken(strconv.Itoa(int(res.ID)), res.Username, 60 * 60 * 24 * 30) // 30 days
+	if err2 != nil {
+		return "", errors.New("login error: unable to generate token")
+	}
+	return token, nil
+}
+
+func Logout(token string) error {
+	if err := utils.ResetToken(token); err != nil {
+		return errors.New("logout error: " + err.Error())
+	}
+	return nil
+}
 
 // Require verification code by email
 // Registration or Forgot Password will need this function to get verification code
@@ -38,6 +64,25 @@ func RequireVerificationCode(email, phone string) error {
 		}
 	}
 	return nil
+}
+
+func GenerateActivationCode(email, activateUrl string) (string, error) {
+	// generate an activation code
+	code := utils.GenerateRandomString(64)
+	// 3 days
+	if err := utils.SetCacheValue("account", code, email, 60 * 60 * 24 * 3); err != nil {
+		return "", errors.New("save activation code error: " + err.Error())
+	}
+	// url: http://example.com/service/action?code=code
+	// action in activateUrl supposes to be mapped to ActivateAccountWithHashCode below.
+	url := fmt.Sprintf("%s?code=%s", activateUrl, code)
+	// FIXME: company
+	content := utils.GetActivationText("company", url)
+	fmt.Println(content)
+	if err := utils.SendActivationEmail(email, content); err != nil {
+		return "", errors.New("send activation link(by email) error: " + err.Error())
+	}
+	return code, nil
 }
 
 // How Registration Works?
@@ -80,26 +125,6 @@ func Register(email, password, activateUrl string) (string, error) {
 		return "", errors.New("registration error: " + err.Error())
 	}
 	return GenerateActivationCode(email, activateUrl)
-}
-
-// situation a (step 2)
-func GenerateActivationCode(email, activateUrl string) (string, error) {
-	// generate an activation code
-	code := utils.GenerateRandomString(64)
-	// 3 days
-	if err := utils.SetCacheValue("account", code, email, 60 * 60 * 24 * 3); err != nil {
-		return "", errors.New("save activation code error: " + err.Error())
-	}
-	// url: http://example.com/service/action?code=code
-	// action in activateUrl supposes to be mapped to ActivateAccountWithHashCode below.
-	url := fmt.Sprintf("%s?code=%s", activateUrl, code)
-	// FIXME: company
-	content := utils.GetActivationText("company", url)
-	fmt.Println(content)
-	if err := utils.SendActivationEmail(email, content); err != nil {
-		return "", errors.New("send activation link(by email) error: " + err.Error())
-	}
-	return code, nil
 }
 
 // after Register(situation a) do
@@ -169,51 +194,6 @@ func RegisterWithUsername(username, email, phone, password string) error {
 	return nil
 }
 
-// How Login Works?
-// 1. fill login form with UserId/Email/Phone, and submit(POST)
-// 2. server side handle the this requirement.
-// 3. response token or error text
-func Login(username, email, phone, password string) (string, error) {
-	// FIXME: 
-	account := model.Account{ Username: username, Email: email, Phone: phone, Password: password }
-	res, err := model.VerifyAccountWithPassword(account)
-	if err != nil {
-		return "", errors.New("login error: username or password is wrong")
-	}
-	// Further feature: 
-	// if unmatched times > 5, account will be locked(implements in the futher)
-	token, err2 := utils.GenerateToken(strconv.Itoa(int(res.ID)), res.Username, 60 * 60 * 24 * 30) // 30 days
-	if err2 != nil {
-		return "", errors.New("login error: unable to generate token")
-	}
-	return token, nil
-}
-
-func Logout(token string) error {
-	if err := utils.ResetToken(token); err != nil {
-		return errors.New("logout error: " + err.Error())
-	}
-	return nil
-}
-
-func EnabledAccount(username, email, phone string, enabled bool) error {
-	// FIXME: 
-	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: enabled }
-	if err := model.UpdateLockedState(account); err != nil {
-		return errors.New("enable error: " + err.Error())
-	}
-	return nil
-}
-
-func LockAccount(username, email, phone string, locked bool) error {
-	// FIXME: 
-	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: locked }
-	if err := model.UpdateLockedState(account); err != nil {
-		return errors.New("unlock error: " + err.Error())
-	}
-	return nil
-}
-
 // How Forgot Password Works?
 // a. With Verification Code
 //    1. two options(email or phone), select one of them in UI(default is email)
@@ -232,8 +212,42 @@ func LockAccount(username, email, phone string, locked bool) error {
 //    5. server side will handle this POST, and update the password. 
 // c. Come To Me
 
+// situation b
+func Forgot(email, pageUrl string) (string, error) {
+	// generate hash code(key: hash_code, value: email)
+	code := utils.GenerateRandomString(64)
+	if err := utils.SetCacheValue("account", code, email, 60 * 10); err != nil {
+		return "", err
+	}
+	// url: http://example.com/account/action?code=code
+	// action in pageUrl supposes to be mapped to ResetPasswordByHashCode below.
+	url := fmt.Sprintf("%s?code=%s", pageUrl, code)
+	content := utils.GetForgotPasswordText("company", url)
+	fmt.Println(content)
+	if err := utils.SendForgotEmail(email, content); err != nil {
+		return "", err
+	}
+	return code, nil
+}
+
+// after Forgot(situation b)
+func ResetByHashCode(code, password string) error {
+	// get email by hashcode(key: hash_code, value: email)
+	email, err := utils.GetCacheValue("account", code, "")
+	if err != nil {
+		return errors.New("reset error: " + err.Error())
+	}
+	// FIXME: 
+	// update password
+	if err := model.UpdatePassword(model.Account{Email: email.(string), Password: password}); err != nil {
+		return err
+	}
+	utils.ResetCache("account", code)
+	return nil
+}
+
 // situation a
-func ForgotWithCode(email, phone, password, code string) error {
+func ResetWithVerificationCode(email, phone, password, code string) error {
 	var identifier string
 	// only one of email and phone is available, then the other one supposes to be empty
 	if identifier = email; len(identifier) == 0 {
@@ -255,37 +269,42 @@ func ForgotWithCode(email, phone, password, code string) error {
 	return nil
 }
 
-// situation b
-func Forgot(email, pageUrl string) (string, error) {
-	// generate hash code(key: hash_code, value: email)
-	code := utils.GenerateRandomString(64)
-	if err := utils.SetCacheValue("account", code, email, 60 * 10); err != nil {
-		return "", err
+func EnabledAccount(username, email, phone string, enabled bool) error {
+	// FIXME: 
+	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: enabled }
+	if err := model.UpdateLockedState(account); err != nil {
+		return errors.New("enable error: " + err.Error())
 	}
-	// url: http://example.com/account/action?code=code
-	// action in pageUrl supposes to be mapped to ResetPasswordByHashCode below.
-	url := fmt.Sprintf("%s?code=%s", pageUrl, code)
-	content := utils.GetForgotPasswordText("company", url)
-	fmt.Println(content)
-	if err := utils.SendForgotEmail(email, content); err != nil {
-		return "", err
-	}
-	return code, nil
+	return nil
 }
 
-// after Forgot(situation b)
-func ResetPasswordByHashCode(code, password string) error {
-	// get email by hashcode(key: hash_code, value: email)
-	email, err := utils.GetCacheValue("account", code, "")
-	if err != nil {
-		return errors.New("reset error: " + err.Error())
-	}
+func LockAccount(username, email, phone string, locked bool) error {
 	// FIXME: 
-	// update password
-	if err := model.UpdatePassword(model.Account{Email: email.(string), Password: password}); err != nil {
-		return err
+	account := model.Account{ Username: username, Email: email, Phone: phone, IsLocked: locked }
+	if err := model.UpdateLockedState(account); err != nil {
+		return errors.New("unlock error: " + err.Error())
 	}
-	utils.ResetCache("account", code)
 	return nil
+}
+
+func IsUsernameExist(username string) bool {
+	if model.IsAccountExist(model.Account{Username: username}) {
+		return true
+	}
+	return false
+}
+
+func IsEmailExist(email string) bool {
+	if model.IsAccountExist(model.Account{Email: email}) {
+		return true
+	}
+	return false
+}
+
+func IsPhoneExist(phone string) bool {
+	if model.IsAccountExist(model.Account{Phone: phone}) {
+		return true
+	}
+	return false
 }
 

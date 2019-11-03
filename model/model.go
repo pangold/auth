@@ -11,7 +11,7 @@ var (
 )
 
 func init() {
-	db = utils.ConnectDB("root", "88888888", "localhost", "test1", 3306)
+	db = utils.ConnectDB("root", "", "localhost", "test1", 3306)
 	db.AutoMigrate(&Account{}) // risk?
 }
 
