@@ -5,16 +5,16 @@ import (
 )
 
 type Yaml struct {
-	Path string
+
 }
 
-func UseYaml(path string) Config {
-	return &Yaml{Path: path}
+func UseYaml() Config {
+	return &Yaml{}
 }
 
-func (y Yaml) ReadConfig() (*SystemConfig, error) {
+func (y Yaml) ReadConfig(path string) (*SystemConfig, error) {
 	conf := SystemConfig{}
-	data, err := ReadFile(y.Path)
+	data, err := ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -24,12 +24,12 @@ func (y Yaml) ReadConfig() (*SystemConfig, error) {
 	return &conf, nil
 }
 
-func (y Yaml) WriteConfig(conf SystemConfig) error {
+func (y Yaml) WriteConfig(path string, conf SystemConfig) error {
 	data, err := yaml.Marshal(&conf)
 	if err != nil {
 		return err
 	}
-	if err := WriteFile(y.Path, string(data)); err != nil {
+	if err := WriteFile(path, string(data)); err != nil {
 		return err
 	}
 	return nil

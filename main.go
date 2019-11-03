@@ -1,11 +1,27 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"./controller"
+	"./model"
+	"./utils"
 )
 
+func loadConfig(path string) {
+	if err := utils.ReadConfig(path); err != nil {
+		panic("loading configuration failure")
+	}
+	mysql := utils.GetConfig().MySQL
+	if err := model.ConnectDB(mysql.UserName, mysql.Password, mysql.Host, mysql.DBName, mysql.Port); err != nil {
+		panic(err.Error())
+	}
+	model.MigrateAccount()
+}
+
 func main() {
+	loadConfig("config.yml")
 	rounter := gin.Default()
 	// rounter.Use(middleware())
 	v1 := rounter.Group("/api/v1")
@@ -50,5 +66,5 @@ func main() {
 		v3.POST("/is_email_exist", controller.IsEmailExist)
 		v3.POST("/is_phone_exist", controller.IsPhoneExist)
 	}
-	rounter.Run(":8080")
+	rounter.Run(":" + strconv.Itoa(utils.GetConfig().Server.Port))
 }

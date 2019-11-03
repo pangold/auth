@@ -8,6 +8,10 @@ var (
 	tokenString string
 )
 
+func init() {
+	ReadConfig("config/config.yml")
+}
+
 func TestGenerateToken(t *testing.T) {
 	token, err := GenerateToken("10001", "dora", 1)
 	if err != nil {

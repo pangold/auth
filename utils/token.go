@@ -8,19 +8,21 @@ var (
 	t token.Token
 )
 
-func init() {
-	// FIXME: configurable
-	t = token.UseJwtToken("MySecretKey")
+func getToken() token.Token {
+	if t == nil {
+		t = token.UseJwtToken(GetConfig().Jwt.SecretKey)
+	}
+	return t
 }
 
 func GenerateToken(userId, userName string, expire int) (string, error) {
-	return t.GenerateToken(userId, userName, expire)
+	return getToken().GenerateToken(userId, userName, expire)
 }
 
 func ExplainToken(token string, userId, userName *string) error {
-	return t.ExplainToken(token, userId, userName)
+	return getToken().ExplainToken(token, userId, userName)
 }
 
 func ResetToken(token string) error {
-	return t.ResetToken(token)
+	return getToken().ResetToken(token)
 }

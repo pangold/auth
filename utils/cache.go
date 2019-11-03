@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strconv"
+
 	"./cache"
 )
 
@@ -8,23 +10,26 @@ var (
 	c cache.Cache
 )
 
-func init() {
-	// c = cache.UseRedigoCache("127.0.0.1:6379")
-	c = cache.UseSimpleCache()
+func getCache() cache.Cache {
+	if c == nil {
+		c = cache.UseRedigoCache(GetConfig().Redis.Host + ":" + strconv.Itoa(GetConfig().Redis.Port))
+		//c = cache.UseSimpleCache()
+	}
+	return c
 }
 
 func HasCacheKey(service, key string) bool {
-	return c.HasCacheKey(service, key)
+	return getCache().HasCacheKey(service, key)
 }
 
 func GetCacheValue(service, key string, vtype interface{}) (interface{}, error) {
-	return c.GetCacheValue(service, key, vtype)
+	return getCache().GetCacheValue(service, key, vtype)
 }
 
 func SetCacheValue(service, key string, value interface{}, expire int) error {
-	return c.SetCacheValue(service, key, value, expire)
+	return getCache().SetCacheValue(service, key, value, expire)
 }
 
 func ResetCache(service, key string) error {
-	return c.ResetCache(service, key)
+	return getCache().ResetCache(service, key)
 }

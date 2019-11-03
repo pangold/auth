@@ -3,9 +3,11 @@ package model
 import (
 	"fmt"
 	"testing"
+	"../utils"
 )
 
 func init() {
+	db = utils.ConnectDB("root", "", "localhost", "test1", 3306)
 	// drop account_test table
 	if err := DropTable("accounts"); err != nil {
 		fmt.Printf("drop table error: %v\n", err)

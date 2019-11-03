@@ -1,6 +1,8 @@
 package model
 
 import (
+	"errors"
+
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"../utils"
@@ -10,11 +12,6 @@ var (
 	db *gorm.DB
 )
 
-func init() {
-	db = utils.ConnectDB("root", "", "localhost", "test1", 3306)
-	db.AutoMigrate(&Account{}) // risk?
-}
-
 func generateUsername() string {
 	return utils.GenerateRandomString(10)
 }
@@ -23,8 +20,12 @@ func encryptText(text string) string {
 	return utils.GenerateMD5String(text)
 }
 
-func ConnectDB(uname, pwd, host, dbName string, port int) {
+func ConnectDB(uname, pwd, host, dbName string, port int) error {
 	db = utils.ConnectDB(uname, pwd, host, dbName, port)
+	if db == nil {
+		return errors.New("connecting failure")
+	}
+	return nil
 }
 
 func MigrateAccount() {

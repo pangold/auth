@@ -4,37 +4,31 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-type EmailConfig struct {
+type Email interface {
+	SendEmail(subject, content, to string) error
+}
+
+type Gomail struct {
+	m       *gomail.Message
 	Host     string
 	Port     int
-	Email    string
-	Pwd      string
+	Address  string
+	Password string
 }
 
-var (
-	mail *gomail.Message
-	conf EmailConfig
-)
-
-func init() {
-	mail = gomail.NewMessage()
-	conf = EmailConfig{
-		Host: "smtp.163.com",
-		Port: 465,
-		Email: "pangold@163.com",
-		Pwd: "******",
-	}
+func UseGomail(host string, port int, addr, pwd string) Email {
+	return Gomail{m: gomail.NewMessage(), Host: host, Port: port, Address: addr, Password: pwd}
 }
 
-func SendEmail(subject, content, to string) error {
-	mail.SetHeader("From", conf.Email)
-	mail.SetHeader("To", to)
-	mail.SetHeader("Subject", subject)
-	// mail.SetHeader("Cc", cc)
-	// mail.Attach(attachPath)
-	mail.SetBody("text/html", content)
-	dialer := gomail.NewDialer(conf.Host, conf.Port, conf.Email, conf.Pwd)
-	if err := dialer.DialAndSend(mail); err != nil {
+func (e Gomail) SendEmail(subject, content, to string) error {
+	e.m.SetHeader("From", e.Address)
+	e.m.SetHeader("To", to)
+	e.m.SetHeader("Subject", subject)
+	// e.m.SetHeader("Cc", cc)
+	// e.m.Attach(attachPath)
+	e.m.SetBody("text/html", content)
+	dialer := gomail.NewDialer(e.Host, e.Port, e.Address, e.Password)
+	if err := dialer.DialAndSend(e.m); err != nil {
 		return err
 	}
 	return nil

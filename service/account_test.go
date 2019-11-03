@@ -9,6 +9,8 @@ import (
 )
 
 func init() {
+	utils.ReadConfig("../config.yml")
+	model.ConnectDB("root", "", "localhost", "test1", 3306)
 	if err := model.DropTable("accounts"); err != nil {
 		fmt.Printf("drop table error: %v\n", err)
 	}
@@ -115,7 +117,7 @@ func TestForgotWithEmailCode(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if err := ForgotWithCode(email, "", "888888", code.(string)); err != nil {
+	if err := ResetWithVerificationCode(email, "", "888888", code.(string)); err != nil {
 		t.Errorf(err.Error())
 	}
 }
@@ -130,7 +132,7 @@ func TestForgotWithPhoneAndCode(t *testing.T) {
 		t.Errorf(err.Error())
 		return
 	}
-	if err := ForgotWithCode("", phone, "888888", code.(string)); err != nil {
+	if err := ResetWithVerificationCode("", phone, "888888", code.(string)); err != nil {
 		t.Errorf(err.Error())
 	}
 }
@@ -149,7 +151,7 @@ func TestForgot(t *testing.T) {
 	if email.(string) != "pangold@163.com" {
 		t.Errorf("unmatch email with code")
 	}
-	if err := ResetPasswordByHashCode(code, "888888"); err != nil {
+	if err := ResetByHashCode(code, "888888"); err != nil {
 		t.Errorf(err.Error())
 	}
 }
