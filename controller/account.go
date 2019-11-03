@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"../service"
+	"../utils"
 )
 
 func Login(c *gin.Context) {
@@ -94,8 +95,8 @@ func RequireVerificationCode(c *gin.Context) {
 
 // In case clients didn't receive that email / phone activation code.
 func RequireActivationCode(c *gin.Context) {
-	// FIXME: URL may be changed by gateway
-	url := "http://sample.com/activate"
+	// URL may be changed by gateway
+	url := utils.GetConfig().Server.ApiPrefix + "/activate"
 	form := AccountForm{}
 	if err := c.ShouldBindJSON(&form); err != nil {
 		failure(c, http.StatusBadRequest, "Error: Incomplete form")
@@ -114,7 +115,7 @@ func RequireActivationCode(c *gin.Context) {
 
 // Register with Email(unactivated state)
 func RegisterUnactivatedState(c *gin.Context) {
-	url := "http://sample.com/activate"
+	url := utils.GetConfig().Server.ApiPrefix + "/activate"
 	form := AccountForm{}
 	if err := c.ShouldBindJSON(&form); err != nil {
 		failure(c, http.StatusBadRequest, "Error: incomplete form")
@@ -195,7 +196,7 @@ func RegisterRaw(c *gin.Context) {
 
 func Forgot(c *gin.Context) {
 	// FIXME: URL may be changed by gateway
-	url := "http://sample.com/reset"
+	url := utils.GetConfig().Server.ApiPrefix + "/reset"
 	form := AccountForm{}
 	if err := c.ShouldBindJSON(&form); err != nil {
 		failure(c, http.StatusBadRequest, "Error: Incomplete form")

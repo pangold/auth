@@ -1,7 +1,7 @@
 server:
         port: 8888
         api-version: v1
-        api-prefix: auth
+        api-prefix: "127.0.0.1:8888/api/v1"
 jwt:
         secret-key: MySecretKey
 mysql:
