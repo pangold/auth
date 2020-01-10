@@ -1,70 +1,23 @@
 package main
 
 import (
-	"strconv"
-
-	"github.com/gin-gonic/gin"
-	"./controller"
-	"./model"
-	"./utils"
+	"gitlab.com/pangold/auth/config"
+	"gitlab.com/pangold/auth/controller"
+	"gitlab.com/pangold/auth/middleware/system"
+	"gitlab.com/pangold/auth/service"
 )
 
-func loadConfig(path string) {
-	if err := utils.ReadConfig(path); err != nil {
-		panic("loading configuration failure")
-	}
-	mysql := utils.GetConfig().MySQL
-	if err := model.ConnectDB(mysql.UserName, mysql.Password, mysql.Host, mysql.DBName, mysql.Port); err != nil {
-		panic(err.Error())
-	}
-	model.MigrateAccount()
-}
-
 func main() {
-	loadConfig("config.yml")
-	rounter := gin.Default()
-	// rounter.Use(middleware())
-	v1 := rounter.Group("/api/v1")
-	{
-		// Email Link(With Hash Code)
-		v1.POST("/sign_in", controller.Login)
-		v1.POST("/sign_out", controller.Logout)
-		v1.POST("/sign_up", controller.RegisterUnactivatedState)
-		// In case we don't receive activation code
-		v1.POST("/activation_code", controller.RequireActivationCode)
-		v1.GET ("/activate", controller.Activate)
-		v1.POST("/forgot", controller.Forgot)
-		v1.POST("/reset", controller.ResetByHashCode)
-		// For checking
-		v1.POST("/is_username_exist", controller.IsUsernameExist)
-		v1.POST("/is_email_exist", controller.IsEmailExist)
-		v1.POST("/is_phone_exist", controller.IsPhoneExist)
-	}
-	v2 := rounter.Group("/api/v2")
-	{
-		// Verification Code
-		v2.POST("/sign_in", controller.Login)
-		v2.POST("/sign_out", controller.Logout)
-		v2.POST("/sign_up", controller.RegisterWithCode) // needs vcode? you should check if it is exist first
-		v2.POST("/verification_code", controller.RequireVerificationCode)
-		v2.POST("/reset", controller.ResetWithVerificationCode) // compare to v1::reset, there is an additional param phone/email
-		// For checking
-		v2.POST("/is_username_exist", controller.IsUsernameExist)
-		v2.POST("/is_email_exist", controller.IsEmailExist)
-		v2.POST("/is_phone_exist", controller.IsPhoneExist)
-	}
-	v3 := rounter.Group("/api/v3")
-	{
-		// Without any of VCode or Email Link
-		v3.POST("/sign_in", controller.Login)
-		v3.POST("/sign_out", controller.Logout)
-		v3.POST("/sign_up", controller.RegisterRaw)
-		// Forgot? You want to reset your password?
-		// No, so far, what you can do is contact Administrators.
-		// For checking
-		v3.POST("/is_username_exist", controller.IsUsernameExist)
-		v3.POST("/is_email_exist", controller.IsEmailExist)
-		v3.POST("/is_phone_exist", controller.IsPhoneExist)
-	}
-	rounter.Run(":" + strconv.Itoa(utils.GetConfig().Server.Port))
+	// loadConfig("config.yml")
+	as := service.AccountService{}
+	us := service.UserService{}
+	ac := controller.NewAccountController(&as)
+	uc := controller.NewUserController(&us)
+	fc := controller.NewFilterController(system.NewDefaultToken("my-secret-key"))
+	//
+	router := NewRouter(config.HttpConfig{Addr: "0.0.0.0:9999"})
+	router.AccountRouter(ac)
+	router.AccountV2Router(ac)
+	router.UserRouter(fc, uc)
+	router.Run()
 }

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"./verifier"
+	"gitlab.com/pangold/auth/utils/verifier"
 )
 
 // TODO: 

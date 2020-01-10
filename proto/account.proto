@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package auth;
+
+message Account {
+    string userId           = 1;
+    string email            = 2;
+    string phone            = 3;
+    string password         = 4;
+    string verificationCode = 5;
+}
+
+message User {
+    string userId   = 1;
+    string nickName = 2;
+    string url      = 3;
+    bool sex        = 4;
+    int32 age       = 5;
+    string hobby    = 6;
+}
+
+message Response {
+    int32 code  = 1;
+    string msg  = 2;
+    string data = 3;
+}

@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"./content"
+	"gitlab.com/pangold/auth/utils/content"
 )
 
 func GetVerificationText(company, code string) string {

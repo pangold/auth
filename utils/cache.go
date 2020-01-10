@@ -3,7 +3,7 @@ package utils
 import (
 	"strconv"
 
-	"./cache"
+	"gitlab.com/pangold/auth/utils/cache"
 )
 
 var (

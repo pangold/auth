@@ -3,7 +3,7 @@ package utils
 import (
 	"errors"
 
-	"./config"
+	"gitlab.com/pangold/auth/utils/config"
 )
 
 var (
