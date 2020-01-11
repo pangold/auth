@@ -103,9 +103,10 @@ func (this *User) Create(u *model.User) error {
 	if err != nil {
 		return err
 	}
+	if err := NewAccount(this.db).Create(&model.Account{UserId: u.UserId}); err != nil {
+		return err
+	}
 	u.ID = uint64(id)
-	// TODO: Create Account
-	// a := model.Account{UserId: u.UserId}
 	return nil
 }
 
