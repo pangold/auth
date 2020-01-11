@@ -2,21 +2,20 @@ package model
 
 import (
 	"errors"
-	"github.com/jinzhu/gorm"
 	"regexp"
 )
 
 type Account struct {
-	gorm.Model
-	// You can use any one of UserId, Email or PhoneNumber to login
-	// the UserId here is the same to the UserId of table User
-	UserId  	string `json:"username"           gorm:"type:varchar(100);unique_index"`
-	Email		string `json:"email"              gorm:"type:varchar(100)"`
-	Phone		string `json:"phone"              gorm:"type:varchar(100)"`
-	Password	string `json:"password"           gorm:""`
-	Activated	bool   `json:"activated"          gorm:"default:false"`	// Needs to activate when registerred
-	Locked      bool   `json:"locked"             gorm:"default:false"`	// Input wrong userId & password 5 times
-	VCode       string `json:"vcode"              gorm:""`
+	ID          uint64 `json:"id"`
+	UserId  	string `json:"user_id"`
+	Email		string `json:"email"`
+	Phone		string `json:"phone"`
+	Password	string `json:"password"`
+	Activated	bool   `json:"activated"`
+	Locked      bool   `json:"locked"`
+	Code        string `json:"code"`
+	// CreatedAt
+	// UpdatedAt
 	// LastLogInAt	time.Time
 	// LastLogOutAt	time.Time
 	// LastLoggedIp	string

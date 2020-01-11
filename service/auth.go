@@ -5,21 +5,22 @@ import (
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/model"
+	"gitlab.com/pangold/auth/model/db"
 	"gitlab.com/pangold/auth/utils"
 	"strconv"
 )
 
-type Account struct {
+type Auth struct {
 	config config.Server
-	db *model.Auth
+	db *db.Auth
 	token middleware.Token
 	cache middleware.Cache
 	email middleware.Email
 	vcode middleware.VerificationCode
 }
 
-func NewAccount(conf config.Server, db *model.Auth, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Account {
-	return &Account{
+func NewAuthService(conf config.Server, db *db.Auth, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Auth {
+	return &Auth{
 		config: conf,
 		db: db,
 		token: t,
@@ -29,7 +30,7 @@ func NewAccount(conf config.Server, db *model.Auth, e middleware.Email, vc middl
 	}
 }
 
-func (this *Account) Register(a model.Account) error {
+func (this *Auth) Register(a model.Account) error {
 	if err := a.IsAccountValid(); err != nil {
 		return err
 	}
@@ -43,7 +44,7 @@ func (this *Account) Register(a model.Account) error {
 	return errors.New("invalid params")
 }
 
-func (this *Account) GetActivationUrl(a model.Account) error {
+func (this *Auth) GetActivationUrl(a model.Account) error {
 	if err := a.IsEmailValid(); err != nil {
 		return err
 	}
@@ -62,7 +63,7 @@ func (this *Account) GetActivationUrl(a model.Account) error {
 	return nil
 }
 
-func (this *Account) Activate(code string) error {
+func (this *Auth) Activate(code string) error {
 	email, err := this.cache.GetCacheValue("auth", code, string(""))
 	if err != nil {
 		return errors.New("invalid activation code")
@@ -74,7 +75,7 @@ func (this *Account) Activate(code string) error {
 	return nil
 }
 
-func (this *Account) Login(a model.Account) (string, error) {
+func (this *Auth) Login(a model.Account) (string, error) {
 	// FIXME: get cache before checking password
 	if err := this.db.VerifyPassword(&a); err != nil {
 		return "", errors.New("invalid account or password")
@@ -86,11 +87,11 @@ func (this *Account) Login(a model.Account) (string, error) {
 	return token, nil
 }
 
-func (this *Account) Logout(token string) error {
+func (this *Auth) Logout(token string) error {
 	return this.token.ResetToken(token)
 }
 
-func (this *Account) Forgot(a model.Account) error {
+func (this *Auth) Forgot(a model.Account) error {
 	if err := a.IsEmailValid(); err != nil {
 		return err
 	}
@@ -109,8 +110,8 @@ func (this *Account) Forgot(a model.Account) error {
 	return nil
 }
 
-func (this *Account) ResetByHashCode(a model.Account) error {
-	email, err := this.cache.GetCacheValue("auth", a.VCode, string(""))
+func (this *Auth) ResetByHashCode(a model.Account) error {
+	email, err := this.cache.GetCacheValue("auth", a.Code, string(""))
 	if err != nil {
 		return errors.New("invalid reset hash code")
 	}
@@ -121,7 +122,7 @@ func (this *Account) ResetByHashCode(a model.Account) error {
 	return nil
 }
 
-func (this *Account) IsUserIdExist(a model.Account) bool {
+func (this *Auth) IsUserIdExist(a model.Account) bool {
 	if a.UserId == "" {
 		return false
 	}
@@ -129,7 +130,7 @@ func (this *Account) IsUserIdExist(a model.Account) bool {
 	return this.db.IsAccountExist(&model.Account{UserId: a.UserId})
 }
 
-func (this *Account) IsEmailExist(a model.Account) bool {
+func (this *Auth) IsEmailExist(a model.Account) bool {
 	if a.Email == "" {
 		return false
 	}
@@ -137,7 +138,7 @@ func (this *Account) IsEmailExist(a model.Account) bool {
 	return this.db.IsAccountExist(&model.Account{Email: a.Email})
 }
 
-func (this *Account) IsPhoneExist(a model.Account) bool {
+func (this *Auth) IsPhoneExist(a model.Account) bool {
 	if a.Phone == "" {
 		return false
 	}

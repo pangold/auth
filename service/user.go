@@ -3,16 +3,16 @@ package service
 import (
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
-	"gitlab.com/pangold/auth/model"
+	"gitlab.com/pangold/auth/model/db"
 )
 
 type User struct {
 	config config.Server
-	user *model.User
+	user *db.User
 	cache middleware.Cache
 }
 
-func NewUser(conf config.Server, user *model.User, c middleware.Cache) *User {
+func NewUserService(conf config.Server, user *db.User, c middleware.Cache) *User {
 	return &User{
 		config: conf,
 		user: user,

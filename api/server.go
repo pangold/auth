@@ -5,7 +5,7 @@ import (
 	"gitlab.com/pangold/auth/controller"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/middleware/system"
-	"gitlab.com/pangold/auth/model"
+	"gitlab.com/pangold/auth/model/db"
 	"gitlab.com/pangold/auth/service"
 )
 
@@ -15,19 +15,19 @@ type Server struct {
 	cache middleware.Cache
 	email middleware.Email
 	vcode middleware.VerificationCode
-	auth *model.Auth
-	user *model.User
+	auth *db.Auth
+	user *db.User
 }
 
 func NewServer(conf config.Config) *Server {
 	return &Server{
 		config: conf.Server,
-		token: system.NewDefaultToken(conf.Jwt.SecretKey),
-		cache: system.NewSimpleCache(),
-		email: system.NewDefaultEmail(conf.Email), // FIXME: should as one
-		vcode: system.NewDefaultEmail(conf.Email),
-		auth: model.NewAuth(conf.MySQL),
-		user: &model.User{},
+		token:  system.NewDefaultToken(conf.Jwt.SecretKey),
+		cache:  system.NewSimpleCache(),
+		email:  system.NewDefaultEmail(conf.Email), // FIXME: should as one
+		vcode:  system.NewDefaultEmail(conf.Email),
+		auth:   db.NewAuth(conf.MySQL),
+		user:   &db.User{},
 	}
 }
 
@@ -50,11 +50,11 @@ func (this *Server) UseVCode(vcode middleware.VerificationCode) {
 }
 
 func (this *Server) Run() {
-	as := service.NewAccount(this.config, this.auth, this.email, this.vcode, this.token, this.cache)
-	us := service.NewUser(this.config, this.user, this.cache)
-	ac := controller.NewAccountController(as)
+	as := service.NewAuthService(this.config, this.auth, this.email, this.vcode, this.token, this.cache)
+	us := service.NewUserService(this.config, this.user, this.cache)
+	ac := controller.NewAuthController(as)
 	uc := controller.NewUserController(us)
-	auth := controller.NewAuthController(this.token)
+	auth := controller.NewFilterController(this.token)
 	//
 	r := NewRouter(this.config)
 	r.AccountRouter(ac)

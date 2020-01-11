@@ -24,7 +24,7 @@ func (this *Router) Run() {
 	}
 }
 
-func (this *Router) AccountRouter(account *controller.AccountController) {
+func (this *Router) AccountRouter(account *controller.AuthController) {
 	a := this.router.Group("/api/v1")
 	a.POST("/sign_up",        account.SignUp)
 	a.POST("/activation_url", account.GetActivationUrl)
@@ -38,7 +38,7 @@ func (this *Router) AccountRouter(account *controller.AccountController) {
 	a.POST("/phone_exist",    account.IsPhoneExist)
 }
 
-func (this *Router) AccountV2Router(account *controller.AccountController) {
+func (this *Router) AccountV2Router(account *controller.AuthController) {
 	a := this.router.Group("/api/v2")
 	a.POST("/get_code",       account.GetVCode)
 	a.POST("/sign_up",        account.SignUpWithVCode)

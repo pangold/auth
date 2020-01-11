@@ -7,7 +7,7 @@ import (
 )
 
 // Generate verification code, store it and send it out
-func (this *Account) RequestVCode(a model.Account) error {
+func (this *Auth) RequestVCode(a model.Account) error {
 	// relative account(only email or phone)
 	target := a.Email
 	if a.Phone != "" {
@@ -25,7 +25,7 @@ func (this *Account) RequestVCode(a model.Account) error {
 }
 
 // compare to the stored verification code
-func (this *Account) CheckVCode(a model.Account) bool {
+func (this *Auth) CheckVCode(a model.Account) bool {
 	target := a.Email
 	if a.Phone != "" {
 		target = a.Phone
@@ -34,18 +34,18 @@ func (this *Account) CheckVCode(a model.Account) bool {
 	if err != nil {
 		return false
 	}
-	if code.(string) != a.VCode {
+	if code.(string) != a.Code {
 		return false
 	}
 	this.cache.ResetCacheKey("auth", target)
 	return true
 }
 
-func (this *Account) RegisterWithVCode(a model.Account) error {
+func (this *Auth) RegisterWithVCode(a model.Account) error {
 	if err := a.IsValid(); err != nil {
 		return err
 	}
-	if a.VCode == "" || !this.CheckVCode(a) {
+	if a.Code == "" || !this.CheckVCode(a) {
 		return errors.New("invalid verification code")
 	}
 	if err := this.db.Create(&a); err != nil {
@@ -54,15 +54,15 @@ func (this *Account) RegisterWithVCode(a model.Account) error {
 	return nil
 }
 
-func (this *Account) LoginWithVCode(a model.Account) (string, error) {
-	if a.VCode == "" || !this.CheckVCode(a) {
+func (this *Auth) LoginWithVCode(a model.Account) (string, error) {
+	if a.Code == "" || !this.CheckVCode(a) {
 		return "", errors.New("invalid verification code")
 	}
 	return this.Login(a)
 }
 
-func (this *Account) ResetByVCode(a model.Account) error {
-	if a.VCode == "" || !this.CheckVCode(a) {
+func (this *Auth) ResetByVCode(a model.Account) error {
+	if a.Code == "" || !this.CheckVCode(a) {
 		return errors.New("invalid verification code")
 	}
 	if err := this.db.UpdatePassword(a); err != nil {
@@ -71,14 +71,14 @@ func (this *Account) ResetByVCode(a model.Account) error {
 	return nil
 }
 
-func (this *Account) Lock(a model.Account, lock bool) error {
+func (this *Auth) Lock(a model.Account, lock bool) error {
 	if err := this.db.UpdateActivated(a); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *Account) BindEmail(a model.Account, lock bool) error {
+func (this *Auth) BindEmail(a model.Account, lock bool) error {
 	if a.Email == "" || a.UserId == "" {
 		return errors.New("invalid params")
 	}
@@ -88,7 +88,7 @@ func (this *Account) BindEmail(a model.Account, lock bool) error {
 	return nil
 }
 
-func (this *Account) BindPhone(a model.Account, lock bool) error {
+func (this *Auth) BindPhone(a model.Account, lock bool) error {
 	if a.Phone == "" || a.UserId == "" {
 		return errors.New("invalid params")
 	}

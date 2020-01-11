@@ -1,10 +1,11 @@
-package model
+package db
 
 import (
 	"database/sql"
 	"errors"
 	"fmt"
 	"gitlab.com/pangold/auth/config"
+	"gitlab.com/pangold/auth/model"
 	"gitlab.com/pangold/auth/utils"
 )
 
@@ -22,7 +23,7 @@ func NewAuth(c config.MySQL) *Auth {
 	}
 }
 
-func (this *Auth) Create(account *Account) error {
+func (this *Auth) Create(account *model.Account) error {
 	if err := account.IsValid(); err != nil {
 		return err
 	}
@@ -40,11 +41,11 @@ func (this *Auth) Create(account *Account) error {
 	if err != nil {
 		return err
 	}
-	account.ID = uint(id)
+	account.ID = uint64(id)
 	return nil
 }
 
-func (this *Auth) condition(a Account) (cond string, val interface{}) {
+func (this *Auth) condition(a model.Account) (cond string, val interface{}) {
 	if a.ID != 0 {
 		cond, val = " WHERE id = ?", a.ID
 	} else if a.Phone != "" {
@@ -57,7 +58,7 @@ func (this *Auth) condition(a Account) (cond string, val interface{}) {
 	return cond, val
 }
 
-func (this *Auth) VerifyPassword(a *Account) error {
+func (this *Auth) VerifyPassword(a *model.Account) error {
 	if err := a.IsAccountValid(); err != nil {
 		return err
 	}
@@ -76,7 +77,7 @@ func (this *Auth) VerifyPassword(a *Account) error {
 	return nil
 }
 
-func (this *Auth) IsAccountExist(a *Account) bool {
+func (this *Auth) IsAccountExist(a *model.Account) bool {
 	if err := a.IsAccountValid(); err != nil {
 		return false
 	}
@@ -88,7 +89,7 @@ func (this *Auth) IsAccountExist(a *Account) bool {
 	return true
 }
 
-func (this *Auth) UpdatePassword(a Account) error {
+func (this *Auth) UpdatePassword(a model.Account) error {
 	if err := a.IsAccountValid(); err != nil {
 		return err
 	}
@@ -107,7 +108,7 @@ func (this *Auth) UpdatePassword(a Account) error {
 	return nil
 }
 
-func (this *Auth) UpdateActivated(a Account) error {
+func (this *Auth) UpdateActivated(a model.Account) error {
 	if err := a.IsAccountValid(); err != nil {
 		return err
 	}
@@ -123,7 +124,7 @@ func (this *Auth) UpdateActivated(a Account) error {
 	return nil
 }
 
-func (this *Auth) UpdateLocked(a Account) error {
+func (this *Auth) UpdateLocked(a model.Account) error {
 	if err := a.IsAccountValid(); err != nil {
 		return err
 	}
@@ -139,7 +140,7 @@ func (this *Auth) UpdateLocked(a Account) error {
 	return nil
 }
 
-func (this *Auth) UpdateUserId(a Account) error {
+func (this *Auth) UpdateUserId(a model.Account) error {
 	sql := "UPDATE accounts SET user_id = ? WHERE id = ?"
 	stmt, err := this.db.Prepare(sql)
 	defer stmt.Close()
@@ -152,7 +153,7 @@ func (this *Auth) UpdateUserId(a Account) error {
 	return nil
 }
 
-func (this *Auth) UpdateEmail(a Account) error {
+func (this *Auth) UpdateEmail(a model.Account) error {
 	sql := "UPDATE accounts SET email = ? WHERE id = ?"
 	stmt, err := this.db.Prepare(sql)
 	defer stmt.Close()
@@ -165,7 +166,7 @@ func (this *Auth) UpdateEmail(a Account) error {
 	return nil
 }
 
-func (this *Auth) UpdatePhone(a Account) error {
+func (this *Auth) UpdatePhone(a model.Account) error {
 	sql := "UPDATE accounts SET phone = ? WHERE id = ?"
 	stmt, err := this.db.Prepare(sql)
 	defer stmt.Close()

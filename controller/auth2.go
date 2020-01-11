@@ -14,7 +14,7 @@ import (
 // @Param phone string true "option 2 to receive verification code"
 // @Success 200
 // @Router /api/v2/account/get_vcode [post]
-func (this *AccountController) GetVCode(ctx *gin.Context) {
+func (this *AuthController) GetVCode(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -38,7 +38,7 @@ func (this *AccountController) GetVCode(ctx *gin.Context) {
 // @Param password string true "new password(frontend developers must confirm password before posting the form)"
 // @Success 200
 // @Router /api/v2/account/sign_up [post]
-func (this *AccountController) SignUpWithVCode(ctx *gin.Context) {
+func (this *AuthController) SignUpWithVCode(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -59,7 +59,7 @@ func (this *AccountController) SignUpWithVCode(ctx *gin.Context) {
 // @Param verification code "verification code"
 // @Success 200
 // @Router /api/v2/account/sign_in [post]
-func (this *AccountController) SignInWithVCode(ctx *gin.Context) {
+func (this *AuthController) SignInWithVCode(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -82,7 +82,7 @@ func (this *AccountController) SignInWithVCode(ctx *gin.Context) {
 // @Param password "new password"
 // @Success 200
 // @Router /api/v2/account/reset [post]
-func (this *AccountController) ResetWithVCode(ctx *gin.Context) {
+func (this *AuthController) ResetWithVCode(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -102,7 +102,7 @@ func (this *AccountController) ResetWithVCode(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/lock [post]
-func (this *AccountController) Lock(ctx *gin.Context) {
+func (this *AuthController) Lock(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -122,7 +122,7 @@ func (this *AccountController) Lock(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/unlock [post]
-func (this *AccountController) Unlock(ctx *gin.Context) {
+func (this *AuthController) Unlock(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -142,7 +142,7 @@ func (this *AccountController) Unlock(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/bind_email [post]
-func (this *AccountController) BindEmail(ctx *gin.Context) {
+func (this *AuthController) BindEmail(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -162,7 +162,7 @@ func (this *AccountController) BindEmail(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/unbind_email [post]
-func (this *AccountController) UnbindEmail(ctx *gin.Context) {
+func (this *AuthController) UnbindEmail(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -182,7 +182,7 @@ func (this *AccountController) UnbindEmail(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/bind_phone [post]
-func (this *AccountController) BindPhone(ctx *gin.Context) {
+func (this *AuthController) BindPhone(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
@@ -202,7 +202,7 @@ func (this *AccountController) BindPhone(ctx *gin.Context) {
 // @Param account "could be anyone of userId, email or phone"
 // @Success 200
 // @Router /api/account/unbind_phone [post]
-func (this *AccountController) UnbindPhone(ctx *gin.Context) {
+func (this *AuthController) UnbindPhone(ctx *gin.Context) {
 	form := model.Account{}
 	if err := ctx.ShouldBindJSON(&form); err != nil {
 		failure(ctx, http.StatusBadRequest, "invalid params")
