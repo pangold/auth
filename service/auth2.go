@@ -94,6 +94,9 @@ func (this *Auth) BindEmail(a model.Account, bind bool) error {
 	if !bind {
 		a.Email = ""
 	}
+	if err := a.IsAccountValid(); err != nil {
+		return errors.New("unbind limited")
+	}
 	if err := this.db.UpdateEmail(a); err != nil {
 		return err
 	}
@@ -106,6 +109,9 @@ func (this *Auth) BindPhone(a model.Account, bind bool) error {
 	}
 	if !bind {
 		a.Phone = ""
+	}
+	if err := a.IsAccountValid(); err != nil {
+		return errors.New("unbind limited")
 	}
 	if err := this.db.UpdatePhone(a); err != nil {
 		return err
