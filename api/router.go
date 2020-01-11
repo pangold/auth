@@ -1,4 +1,4 @@
-package main
+package api
 
 import (
 	"github.com/gin-gonic/gin"
@@ -8,11 +8,11 @@ import (
 )
 
 type Router struct {
-	config   config.HttpConfig
+	config   config.Server
 	router  *gin.Engine
 }
 
-func NewRouter(conf config.HttpConfig) *Router {
+func NewRouter(conf config.Server) *Router {
 	return &Router{
 		config: conf,
 		router: gin.Default(),
@@ -20,7 +20,7 @@ func NewRouter(conf config.HttpConfig) *Router {
 }
 
 func (this *Router) Run() {
-	log.Printf("http account server start running at %s\n", this.config.Addr)
+	log.Printf("http server start running at %s\n", this.config.Addr)
 	if err := this.router.Run(this.config.Addr); err != nil {
 		panic(err)
 	}
@@ -28,16 +28,16 @@ func (this *Router) Run() {
 
 func (this *Router) AccountRouter(account *controller.AccountController) {
 	a := this.router.Group("/api/v1/accounts")
-	a.POST("/sign_up",          account.SignUp)
-	a.POST("/activation_url",   account.GetActivationUrl)
-	a.POST("/activate",         account.Activate)
-	a.POST("/sign_in",          account.SignIn)
-	a.POST("/sign_out",         account.SignOut)
-	a.POST("/forgot",           account.Forgot)
-	a.POST("/reset",            account.Reset)
-	a.POST("/is_user_id_exist", account.IsUserIdExist)
-	a.POST("/is_email_exist",   account.IsEmailExist)
-	a.POST("/is_phone_exist",   account.IsPhoneExist)
+	a.POST("/sign_up",        account.SignUp)
+	a.POST("/activation_url", account.GetActivationUrl)
+	a.POST("/activate",       account.Activate)
+	a.POST("/sign_in",        account.SignIn)
+	a.POST("/sign_out",       account.SignOut)
+	a.POST("/forgot",         account.Forgot)
+	a.POST("/reset",          account.Reset)
+	a.POST("/uid_exist",      account.IsUserIdExist)
+	a.POST("/email_exist",    account.IsEmailExist)
+	a.POST("/phone_exist",    account.IsPhoneExist)
 }
 
 func (this *Router) AccountV2Router(account *controller.AccountController) {

@@ -18,7 +18,7 @@ func NewFilterController(token middleware.Token) *Filter {
 func (f *Filter) Filter(ctx *gin.Context) {
 	token := ctx.GetHeader("token")
 	var cid, uid, name string
-	if err := f.token.TokenVerification(token, &cid, &uid, &name); err != nil {
+	if err := f.token.CheckToken(token, &cid, &uid, &name); err != nil {
 		ctx.Abort()
 		return
 	}

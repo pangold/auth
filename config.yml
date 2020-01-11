@@ -1,7 +1,6 @@
 server:
-        port: 8888
-        api-version: v1
-        api-prefix: "127.0.0.1:8888/api/v1"
+        addr: 127.0.0.1:9999
+        expire: 604800 # 60 * 60 * 24 * 7
 jwt:
         secret-key: MySecretKey
 mysql:
@@ -11,8 +10,7 @@ mysql:
         port: 3306
         dbname: test1
 redis:
-        host: localhost
-        port: 6379
+        addr: localhost:6379
 email:
         host: smtp.163.com
         port: 485

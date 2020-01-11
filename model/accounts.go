@@ -12,7 +12,7 @@ type DB struct {
 	db *sql.DB
 }
 
-func NewDB(c config.MySqlConfig) *DB {
+func NewDB(c config.MySQL) *DB {
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", c.User, c.Password, c.Host, c.DBName))
 	if err != nil {
 		panic(err.Error())
