@@ -93,7 +93,7 @@ func (this *RedisCache) GetCacheValue(service, key string, vtype interface{}) (i
 	return nil, nil
 }
 
-func (this *RedisCache) ResetCache(service, key string) error {
+func (this *RedisCache) ResetCacheKey(service, key string) error {
 	k := this.generateKey(service, key)
 	if _, err := this.conn.Do("DEL", k); err != nil {
 		return err

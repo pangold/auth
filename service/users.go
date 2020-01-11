@@ -7,13 +7,15 @@ import (
 )
 
 type UserService struct {
+	config config.Server
 	db *model.DB
 	cache middleware.Cache
 }
 
-func NewUserService(conf config.Config, c middleware.Cache) *UserService {
+func NewUserService(conf config.Server, db *model.DB, c middleware.Cache) *UserService {
 	return &UserService{
-		db: model.NewDB(conf.MySQL),
+		config: conf,
+		db: db,
 		cache: c,
 	}
 }

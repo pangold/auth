@@ -15,10 +15,10 @@ type AccountService struct {
 	cache middleware.Cache
 }
 
-func NewAccountService(conf config.Config, t middleware.Token, c middleware.Cache) *AccountService {
+func NewAccountService(conf config.Server, db *model.DB, t middleware.Token, c middleware.Cache) *AccountService {
 	return &AccountService{
-		config: conf.Server,
-		db: model.NewDB(conf.MySQL),
+		config: conf,
+		db: db,
 		token: t,
 		cache: c,
 	}

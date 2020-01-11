@@ -6,10 +6,10 @@ import (
 )
 
 func main() {
-	conf := config.NewYaml("config.yml").ReadConfig()
+	conf := config.NewYaml("config/config.yml").ReadConfig()
 	server := api.NewServer(*conf)
-	// custom middleware()
+	// custom middleware
 	// server.UseToken(system.NewDefaultToken("secret-key"))
-	// server.UseCache(system.NewSimpleCache())
+	// server.UseCache(system.NewRedisCache(conf.Redis.Addr))
 	server.Run()
 }

@@ -5,43 +5,46 @@ import (
 	"gitlab.com/pangold/auth/controller"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/middleware/system"
+	"gitlab.com/pangold/auth/model"
 	"gitlab.com/pangold/auth/service"
 )
 
 type Server struct {
-	conf config.Config
+	config config.Server
 	token middleware.Token
 	cache middleware.Cache
+	db *model.DB
 }
 
 func NewServer(conf config.Config) *Server {
-	server := &Server{
-		conf: conf,
+	return &Server{
+		config: conf.Server,
 		token: system.NewDefaultToken(conf.Jwt.SecretKey),
 		cache: system.NewSimpleCache(),
+		db: model.NewDB(conf.MySQL),
 	}
-	return server
 }
 
-//
+// customize token middleware
 func (this *Server) UseToken(token middleware.Token) {
 	this.token = token
 }
 
+// customize cache middleware
 func (this *Server) UseCache(cache middleware.Cache) {
 	this.cache = cache
 }
 
 func (this *Server) Run() {
-	as := service.NewAccountService(this.conf, this.token, this.cache)
-	us := service.NewUserService(this.conf, this.cache)
+	as := service.NewAccountService(this.config, this.db, this.token, this.cache)
+	us := service.NewUserService(this.config, this.db, this.cache)
 	ac := controller.NewAccountController(as)
 	uc := controller.NewUserController(us)
-	fc := controller.NewFilterController(this.token)
+	auth := controller.NewAuthController(this.token)
 	//
-	r := NewRouter(this.conf.Server)
+	r := NewRouter(this.config)
 	r.AccountRouter(ac)
 	r.AccountV2Router(ac)
-	r.UserRouter(fc, uc)
+	r.UserRouter(uc, auth.Filter)
 	r.Run()
 }
