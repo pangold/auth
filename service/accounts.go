@@ -5,31 +5,36 @@ import (
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/model"
+	"gitlab.com/pangold/auth/utils"
 	"strconv"
 )
 
-type AccountService struct {
+type Account struct {
 	config config.Server
-	db *model.DB
+	db *model.Auth
 	token middleware.Token
 	cache middleware.Cache
+	email middleware.Email
+	vcode middleware.VerificationCode
 }
 
-func NewAccountService(conf config.Server, db *model.DB, t middleware.Token, c middleware.Cache) *AccountService {
-	return &AccountService{
+func NewAccount(conf config.Server, db *model.Auth, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Account {
+	return &Account{
 		config: conf,
 		db: db,
 		token: t,
 		cache: c,
+		email: e,
+		vcode: vc,
 	}
 }
 
-func (this *AccountService) Register(a model.Account) error {
-	if a.UserId == "" && a.Email == "" && a.Phone == "" {
-		return errors.New("empty account")
+func (this *Account) Register(a model.Account) error {
+	if err := a.IsAccountValid(); err != nil {
+		return err
 	}
-	if a.Password == "" {
-		return errors.New("empty password")
+	if err := a.IsPasswordValid(); err != nil {
+		return err
 	}
 	if err := this.db.Create(&a); err != nil {
 		return err
@@ -38,72 +43,106 @@ func (this *AccountService) Register(a model.Account) error {
 	return errors.New("invalid params")
 }
 
-func (this *AccountService) GetActivationUrl(a model.Account) error {
-	// send activation-url via email
+func (this *Account) GetActivationUrl(a model.Account) error {
+	if err := a.IsEmailValid(); err != nil {
+		return err
+	}
+	if !this.db.IsAccountExist(&model.Account{Email: a.Email}) {
+		return errors.New("email is not exist")
+	}
+	// generate activation hash code and save
+	code := utils.GenerateRandomString(64)
+	if err := this.cache.SetCacheValue("auth", code, a.Email, 60 * 5); err != nil {
+		return errors.New("server error with " + err.Error())
+	}
+	// send activation code via email
+	if err := this.email.SendActivationEmail(a.Email, code); err != nil {
+		return errors.New("email service error with " + err.Error())
+	}
 	return nil
 }
 
-func (this *AccountService) Activate(email, code string) error {
-	a := model.Account{Activated: true, Email: email}
+func (this *Account) Activate(code string) error {
+	email, err := this.cache.GetCacheValue("auth", code, string(""))
+	if err != nil {
+		return errors.New("invalid activation code")
+	}
+	a := model.Account{Activated: true, Email: email.(string)}
 	if err := this.db.UpdateActivated(a); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *AccountService) Login(a model.Account) (string, error) {
+func (this *Account) Login(a model.Account) (string, error) {
 	// FIXME: get cache before checking password
 	if err := this.db.VerifyPassword(&a); err != nil {
 		return "", errors.New("invalid account or password")
 	}
 	token, err := this.token.GenerateToken(strconv.Itoa(int(a.ID)), a.UserId, "pc", this.config.TokenExpire)
 	if err != nil {
-		return "", errors.New("generate token error " + err.Error())
+		return "", errors.New("server error " + err.Error())
 	}
 	return token, nil
 }
 
-func (this *AccountService) Logout(token string) error {
+func (this *Account) Logout(token string) error {
 	return this.token.ResetToken(token)
 }
 
-func (this *AccountService) Forgot(a model.Account) error {
-	// check email
-	// generate hash code with email
-	// send email
+func (this *Account) Forgot(a model.Account) error {
+	if err := a.IsEmailValid(); err != nil {
+		return err
+	}
+	if !this.db.IsAccountExist(&model.Account{Email: a.Email}) {
+		return errors.New("email is not exist")
+	}
+	// generate activation hash code and save
+	code := utils.GenerateRandomString(64)
+	if err := this.cache.SetCacheValue("auth", code, a.Email, 60 * 5); err != nil {
+		return errors.New("server error with " + err.Error())
+	}
+	// send activation code via email
+	if err := this.email.SendResetPasswordEmail(a.Email, code); err != nil {
+		return errors.New("server error with " + err.Error())
+	}
 	return nil
 }
 
-func (this *AccountService) ResetByHashCode(a model.Account) error {
-	// get email by hash code
-	a.Email = ""
-	// FIXME: clear cache before updating
+func (this *Account) ResetByHashCode(a model.Account) error {
+	email, err := this.cache.GetCacheValue("auth", a.VCode, string(""))
+	if err != nil {
+		return errors.New("invalid reset hash code")
+	}
+	a.Email = email.(string)
 	if err := this.db.UpdatePassword(a); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (this *AccountService) IsUserIdExist(a model.Account) bool {
+func (this *Account) IsUserIdExist(a model.Account) bool {
 	if a.UserId == "" {
 		return false
 	}
 	// FIXME: check if exist from cache before reading db
-	return this.db.IsAccountExist(a)
+	return this.db.IsAccountExist(&model.Account{UserId: a.UserId})
 }
 
-func (this *AccountService) IsEmailExist(a model.Account) bool {
+func (this *Account) IsEmailExist(a model.Account) bool {
 	if a.Email == "" {
 		return false
 	}
 	// FIXME: check if exist from cache before reading db
-	return this.db.IsAccountExist(a)
+	return this.db.IsAccountExist(&model.Account{Email: a.Email})
 }
 
-func (this *AccountService) IsPhoneExist(a model.Account) bool {
+func (this *Account) IsPhoneExist(a model.Account) bool {
 	if a.Phone == "" {
 		return false
 	}
 	// FIXME: check if exist from cache before reading db
-	return this.db.IsAccountExist(a)
+
+	// wrap again just in case input is incorrect
+	return this.db.IsAccountExist(&model.Account{Phone: a.Phone})
 }

@@ -20,8 +20,8 @@ type VerificationCode interface {
 // And to manage your Email service
 // Default email service: gomail
 type Email interface {
-	SendActivationEmail(to, url string) error
-	SendResetPasswordEmail(to, url string) error
+	SendActivationEmail(to, code string) error
+	SendResetPasswordEmail(to, code string) error
 }
 
 type Cache interface {

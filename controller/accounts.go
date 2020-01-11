@@ -8,10 +8,10 @@ import (
 )
 
 type AccountController struct {
-	service *service.AccountService
+	service *service.Account
 }
 
-func NewAccountController(s *service.AccountService) *AccountController {
+func NewAccountController(s *service.Account) *AccountController {
 	return &AccountController{
 		service: s,
 	}
@@ -65,8 +65,8 @@ func (this *AccountController) GetActivationUrl(ctx *gin.Context) {
 // @Success 200
 // @Router /api/v1/account/activate?email={email}&code={code} [get]
 func (this *AccountController) Activate(ctx *gin.Context) {
-	e, c := ctx.Query("email"), ctx.Query("code")
-	if err := this.service.Activate(e, c); err != nil {
+	c := ctx.Query("code")
+	if err := this.service.Activate(c); err != nil {
 		failure(ctx, http.StatusBadRequest, err.Error())
 		return
 	}

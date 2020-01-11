@@ -13,7 +13,10 @@ type Server struct {
 	config config.Server
 	token middleware.Token
 	cache middleware.Cache
-	db *model.DB
+	email middleware.Email
+	vcode middleware.VerificationCode
+	auth *model.Auth
+	user *model.User
 }
 
 func NewServer(conf config.Config) *Server {
@@ -21,7 +24,10 @@ func NewServer(conf config.Config) *Server {
 		config: conf.Server,
 		token: system.NewDefaultToken(conf.Jwt.SecretKey),
 		cache: system.NewSimpleCache(),
-		db: model.NewDB(conf.MySQL),
+		email: system.NewDefaultEmail(conf.Email), // FIXME: should as one
+		vcode: system.NewDefaultEmail(conf.Email),
+		auth: model.NewAuth(conf.MySQL),
+		user: &model.User{},
 	}
 }
 
@@ -35,9 +41,17 @@ func (this *Server) UseCache(cache middleware.Cache) {
 	this.cache = cache
 }
 
+func (this *Server) UseEmail(email middleware.Email) {
+	this.email = email
+}
+
+func (this *Server) UseVCode(vcode middleware.VerificationCode) {
+	this.vcode = vcode
+}
+
 func (this *Server) Run() {
-	as := service.NewAccountService(this.config, this.db, this.token, this.cache)
-	us := service.NewUserService(this.config, this.db, this.cache)
+	as := service.NewAccount(this.config, this.auth, this.email, this.vcode, this.token, this.cache)
+	us := service.NewUser(this.config, this.user, this.cache)
 	ac := controller.NewAccountController(as)
 	uc := controller.NewUserController(us)
 	auth := controller.NewAuthController(this.token)
