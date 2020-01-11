@@ -1,11 +1,13 @@
 package api
 
 import (
+	"database/sql"
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/controller"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/middleware/system"
 	"gitlab.com/pangold/auth/service"
+	"gitlab.com/pangold/auth/utils"
 )
 
 type Server struct {
@@ -14,15 +16,23 @@ type Server struct {
 	cache middleware.Cache
 	email middleware.Email
 	vcode middleware.VerificationCode
+	dbconn *sql.DB
+}
+
+func NewDBConn(conf config.MySQL) *sql.DB {
+	return utils.GetDBConn(conf.User, conf.Password, conf.Host, conf.DBName, conf.Port)
 }
 
 func NewServer(conf config.Config) *Server {
+	conn := NewDBConn(conf.MySQL)
+	email := system.NewDefaultEmail(conf.Email)
 	return &Server{
 		config: conf,
 		token:  system.NewDefaultToken(conf.Jwt.SecretKey),
 		cache:  system.NewSimpleCache(),
-		email:  system.NewDefaultEmail(conf.Email), // FIXME: should as one
-		vcode:  system.NewDefaultEmail(conf.Email),
+		email:  email,
+		vcode:  email,
+		dbconn: conn,
 	}
 }
 
@@ -45,9 +55,9 @@ func (this *Server) UseVCode(vcode middleware.VerificationCode) {
 }
 
 func (this *Server) Run() {
-	as := service.NewAuthService(this.config, this.email, this.vcode, this.token, this.cache)
-	us := service.NewUserService(this.config, this.cache)
-	a3 := service.NewAccountService(this.config, this.cache)
+	as := service.NewAuthService(this.config, this.dbconn, this.email, this.vcode, this.token, this.cache)
+	us := service.NewUserService(this.config, this.dbconn, this.cache)
+	a3 := service.NewAccountService(this.config, this.dbconn, this.cache)
 	ac := controller.NewAuthController(as)
 	uc := controller.NewUserController(us)
 	a4 := controller.NewAccountController(a3)

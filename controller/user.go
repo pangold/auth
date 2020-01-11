@@ -79,19 +79,13 @@ func (this *UserController) Update(ctx *gin.Context) {
 }
 
 func (this *UserController) Delete(ctx *gin.Context) {
-	user := model.User{}
-	if err := ctx.ShouldBindJSON(&user); err != nil {
-		failure(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
 	id := ctx.Param("id")
 	iid, err := strconv.Atoi(id)
 	if err != nil {
 		failure(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
-	user.ID = uint64(iid)
-	if err := this.service.Delete(&user); err != nil {
+	if err := this.service.Delete(&model.User{ID: uint64(iid)}); err != nil {
 		failure(ctx, http.StatusBadRequest, err.Error())
 		return
 	}

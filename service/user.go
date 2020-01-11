@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
 	"gitlab.com/pangold/auth/model"
@@ -13,10 +14,10 @@ type User struct {
 	cache middleware.Cache
 }
 
-func NewUserService(conf config.Config, c middleware.Cache) *User {
+func NewUserService(conf config.Config, conn *sql.DB, c middleware.Cache) *User {
 	return &User{
 		config: conf.Server,
-		db: db.NewUser(conf.MySQL),
+		db: db.NewUser(conn),
 		cache: c,
 	}
 }

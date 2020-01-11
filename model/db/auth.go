@@ -3,8 +3,6 @@ package db
 import (
 	"database/sql"
 	"errors"
-	"fmt"
-	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/model"
 	"gitlab.com/pangold/auth/utils"
 )
@@ -13,13 +11,9 @@ type Auth struct {
 	db *sql.DB
 }
 
-func NewAuth(c config.MySQL) *Auth {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", c.User, c.Password, c.Host, c.DBName))
-	if err != nil {
-		panic(err.Error())
-	}
+func NewAuth(conn *sql.DB) *Auth {
 	return &Auth{
-		db: db,
+		db: conn,
 	}
 }
 

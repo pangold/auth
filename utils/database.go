@@ -1,19 +1,15 @@
 package utils
 
 import (
+	"database/sql"
 	"fmt"
-
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/go-sql-driver/mysql"
 )
 
-
-func ConnectDB(uname, pwd, host, dbname string, port int) *gorm.DB {
-	args := fmt.Sprintf("%s:%s@(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local", uname,pwd, host, port, dbname)
-	db, err := gorm.Open("mysql", args)
+func GetDBConn(user, pwd, host, dbname string, port int) *sql.DB {
+	conn, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", user, pwd, host, port, dbname))
 	if err != nil {
-		// panic("failed to connect database" + err)
-		panic(err)
+		panic(err.Error())
 	}
-	return db
+	return conn
 }

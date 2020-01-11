@@ -79,19 +79,13 @@ func (this *AccountController) Update(ctx *gin.Context) {
 }
 
 func (this *AccountController) Delete(ctx *gin.Context) {
-	account := model.Account{}
-	if err := ctx.ShouldBindJSON(&account); err != nil {
-		failure(ctx, http.StatusBadRequest, err.Error())
-		return
-	}
 	id := ctx.Param("id")
 	iid, err := strconv.Atoi(id)
 	if err != nil {
 		failure(ctx, http.StatusBadRequest, err.Error())
 		return
 	}
-	account.ID = uint64(iid)
-	if err := this.service.Delete(&account); err != nil {
+	if err := this.service.Delete(&model.Account{ID: uint64(iid)}); err != nil {
 		failure(ctx, http.StatusBadRequest, err.Error())
 		return
 	}

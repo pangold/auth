@@ -2,8 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
-	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/model"
 )
 
@@ -11,26 +9,13 @@ type User struct {
 	db *sql.DB
 }
 
-func NewUser(c config.MySQL) *User {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", c.User, c.Password, c.Host, c.DBName))
-	if err != nil {
-		panic(err.Error())
-	}
+func NewUser(conn *sql.DB) *User {
 	return &User{
-		db: db,
+		db: conn,
 	}
 }
 
-//ID uint64
-//UserId string
-//NickName string
-//Profile string
-//Sex bool
-//Age int
-//Hobby string
-
 func (this *User) GetUsers() (res []*model.User) {
-	// TODO: joint account
 	rows, err := this.db.Query("SELECT id, user_id, nickname, url, sex, age, hobby FROM users")
 	if err != nil {
 		return nil
@@ -56,14 +41,14 @@ func (this *User) GetUserById(id uint64) *model.User {
 func (this *User) GetAccountByUserId(uid string) *model.User {
 	row := this.db.QueryRow("SELECT " +
 		"u.id, u.user_id, u.nickname, u.url, u.sex, u.age, u.hobby " +
-		"a.email, a.phone, a.activated, a.locked " +
+		"a.id, a.user_id, a.email, a.phone, a.activated, a.locked " +
 		"FROM users AS u " +
-		"LEFT JOIN accounts AS a " +
-		"ON a.user_id = b.user_id " +
+		"RIGHT JOIN accounts AS a " +
+		"ON a.user_id = u.user_id " +
 		"WHERE u.user_id = ?", uid)
 	a := &model.User{}
 	err := row.Scan(&a.ID, &a.UserId, &a.NickName, &a.Url, &a.Sex, &a.Age, &a.Hobby,
-		&a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
+		&a.ID, &a.UserId, &a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
 	if err != nil {
 		return nil
 	}
@@ -73,14 +58,14 @@ func (this *User) GetAccountByUserId(uid string) *model.User {
 func (this *User) GetAccountByEmail(email string) *model.User {
 	row := this.db.QueryRow("SELECT " +
 		"u.id, u.user_id, u.nickname, u.url, u.sex, u.age, u.hobby " +
-		"a.email, a.phone, a.activated, a.locked " +
+		"a.id, a.user_id, a.email, a.phone, a.activated, a.locked " +
 		"FROM users AS u " +
-		"LEFT JOIN accounts AS a " +
-		"ON a.user_id = b.user_id " +
-		"WHERE u.user_id = ?", email)
+		"RIGHT JOIN accounts AS a " +
+		"ON a.user_id = u.user_id " +
+		"WHERE u.email = ?", email)
 	a := &model.User{}
 	err := row.Scan(&a.ID, &a.UserId, &a.NickName, &a.Url, &a.Sex, &a.Age, &a.Hobby,
-		&a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
+		&a.ID, &a.UserId, &a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
 	if err != nil {
 		return nil
 	}
@@ -90,14 +75,14 @@ func (this *User) GetAccountByEmail(email string) *model.User {
 func (this *User) GetAccountByPhone(phone string) *model.User {
 	row := this.db.QueryRow("SELECT " +
 		"u.id, u.user_id, u.nickname, u.url, u.sex, u.age, u.hobby " +
-		"a.email, a.phone, a.activated, a.locked " +
+		"a.id, a.user_id, a.email, a.phone, a.activated, a.locked " +
 		"FROM users AS u " +
-		"LEFT JOIN accounts AS a " +
-		"ON a.user_id = b.user_id " +
-		"WHERE u.user_id = ?", phone)
+		"RIGHT JOIN accounts AS a " +
+		"ON a.user_id = u.user_id " +
+		"WHERE u.phone = ?", phone)
 	a := &model.User{}
 	err := row.Scan(&a.ID, &a.UserId, &a.NickName, &a.Url, &a.Sex, &a.Age, &a.Hobby,
-		&a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
+		&a.ID, &a.UserId, &a.Account.Email, &a.Account.Phone, &a.Account.Activated, &a.Account.Locked)
 	if err != nil {
 		return nil
 	}
@@ -120,6 +105,7 @@ func (this *User) Create(u *model.User) error {
 	}
 	u.ID = uint64(id)
 	// TODO: Create Account
+	// a := model.Account{UserId: u.UserId}
 	return nil
 }
 
@@ -136,7 +122,7 @@ func (this *User) Update(u *model.User) error {
 }
 
 func (this *User) Delete(u *model.User) error {
-	stmt, err := this.db.Prepare("UPDATE FROM users WHERE id = ?")
+	stmt, err := this.db.Prepare("DELETE FROM users WHERE id = ?")
 	defer stmt.Close()
 	if err != nil {
 		return err

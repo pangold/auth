@@ -1,6 +1,7 @@
 package service
 
 import (
+	"database/sql"
 	"errors"
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
@@ -19,10 +20,10 @@ type Auth struct {
 	vcode middleware.VerificationCode
 }
 
-func NewAuthService(conf config.Config, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Auth {
+func NewAuthService(conf config.Config, conn *sql.DB, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Auth {
 	return &Auth{
 		config: conf.Server,
-		db: db.NewAuth(conf.MySQL),
+		db: db.NewAuth(conn),
 		token: t,
 		cache: c,
 		email: e,

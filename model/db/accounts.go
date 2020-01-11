@@ -2,8 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
-	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/model"
 	"gitlab.com/pangold/auth/utils"
 )
@@ -12,13 +10,9 @@ type Account struct {
 	db *sql.DB
 }
 
-func NewAccount(c config.MySQL) *Account {
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=utf8", c.User, c.Password, c.Host, c.DBName))
-	if err != nil {
-		panic(err.Error())
-	}
+func NewAccount(conn *sql.DB) *Account {
 	return &Account{
-		db: db,
+		db: conn,
 	}
 }
 
