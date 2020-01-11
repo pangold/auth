@@ -19,10 +19,10 @@ type Auth struct {
 	vcode middleware.VerificationCode
 }
 
-func NewAuthService(conf config.Server, db *db.Auth, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Auth {
+func NewAuthService(conf config.Config, e middleware.Email, vc middleware.VerificationCode, t middleware.Token, c middleware.Cache) *Auth {
 	return &Auth{
-		config: conf,
-		db: db,
+		config: conf.Server,
+		db: db.NewAuth(conf.MySQL),
 		token: t,
 		cache: c,
 		email: e,

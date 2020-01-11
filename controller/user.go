@@ -23,14 +23,6 @@ func (this *UserController) Show(c *gin.Context) {
 
 }
 
-func (this *UserController) New(c *gin.Context) {
-
-}
-
-func (this *UserController) Edit(c *gin.Context) {
-
-}
-
 func (this *UserController) Create(c *gin.Context) {
 
 }

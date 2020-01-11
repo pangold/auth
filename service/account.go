@@ -6,16 +6,16 @@ import (
 	"gitlab.com/pangold/auth/model/db"
 )
 
-type User struct {
+type Account struct {
 	config config.Server
-	db *db.User
+	db *db.Account
 	cache middleware.Cache
 }
 
-func NewUserService(conf config.Config, c middleware.Cache) *User {
-	return &User{
+func NewAccountService(conf config.Config, c middleware.Cache) *Account {
+	return &Account{
 		config: conf.Server,
-		db: db.NewUser(conf.MySQL),
+		db: db.NewAccount(conf.MySQL),
 		cache: c,
 	}
 }

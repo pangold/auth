@@ -24,34 +24,43 @@ func (this *Router) Run() {
 	}
 }
 
-func (this *Router) AccountRouter(account *controller.AuthController) {
+func (this *Router) AuthRouter(auth *controller.AuthController) {
 	a := this.router.Group("/api/v1")
-	a.POST("/sign_up",        account.SignUp)
-	a.POST("/activation_url", account.GetActivationUrl)
-	a.POST("/activate",       account.Activate)
-	a.POST("/sign_in",        account.SignIn)
-	a.POST("/sign_out",       account.SignOut)
-	a.POST("/forgot",         account.Forgot)
-	a.POST("/reset",          account.Reset)
-	a.POST("/uid_exist",      account.IsUserIdExist)
-	a.POST("/email_exist",    account.IsEmailExist)
-	a.POST("/phone_exist",    account.IsPhoneExist)
+	a.POST("/sign_up",        auth.SignUp)
+	a.POST("/activation_url", auth.GetActivationUrl)
+	a.POST("/activate",       auth.Activate)
+	a.POST("/sign_in",        auth.SignIn)
+	a.POST("/sign_out",       auth.SignOut)
+	a.POST("/forgot",         auth.Forgot)
+	a.POST("/reset",          auth.Reset)
+	a.POST("/uid_exist",      auth.IsUserIdExist)
+	a.POST("/email_exist",    auth.IsEmailExist)
+	a.POST("/phone_exist",    auth.IsPhoneExist)
 }
 
-func (this *Router) AccountV2Router(account *controller.AuthController) {
+func (this *Router) Auth2Router(auth *controller.AuthController) {
 	a := this.router.Group("/api/v2")
-	a.POST("/get_code",       account.GetVCode)
-	a.POST("/sign_up",        account.SignUpWithVCode)
-	a.POST("/sign_in",        account.SignInWithVCode)
-	a.POST("/forgot",         account.ResetWithVCode)    // v2 of forgot
-	a.POST("/reset",          account.ResetWithVCode)    // v2 of forgot
-	a.POST("/lock",           account.Lock)
-	a.POST("/unlock",         account.Unlock)
-	a.POST("/bind_email",     account.BindEmail)
-	a.POST("/unbind_email",   account.UnbindEmail)
-	a.POST("/bind_phone",     account.BindPhone)
-	a.POST("/unbind_phone",   account.UnbindPhone)
+	a.POST("/get_code",       auth.GetVCode)
+	a.POST("/sign_up",        auth.SignUpWithVCode)
+	a.POST("/sign_in",        auth.SignInWithVCode)
+	a.POST("/forgot",         auth.ResetWithVCode)    // v2 of forgot
+	a.POST("/reset",          auth.ResetWithVCode)    // v2 of forgot
+	a.POST("/lock",           auth.Lock)
+	a.POST("/unlock",         auth.Unlock)
+	a.POST("/bind_email",     auth.BindEmail)
+	a.POST("/unbind_email",   auth.UnbindEmail)
+	a.POST("/bind_phone",     auth.BindPhone)
+	a.POST("/unbind_phone",   auth.UnbindPhone)
 	// a.POST("/3rd",          account.ThirdPartyLogin)
+}
+
+func (this *Router) AccountRouter(account *controller.AccountController, filter ...gin.HandlerFunc) {
+	a := this.router.Group("/api/v1").Use(filter...)
+	a.GET   ("/accounts",     account.Index)
+	a.GET   ("/account/{id}", account.Show)
+	a.POST  ("/account/",     account.Create)
+	a.PUT   ("/account/{id}", account.Update)
+	a.DELETE("/account/{id}", account.Delete)
 }
 
 func (this *Router) UserRouter(user *controller.UserController, filter ...gin.HandlerFunc) {
