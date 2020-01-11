@@ -3,6 +3,7 @@ package service
 import (
 	"gitlab.com/pangold/auth/config"
 	"gitlab.com/pangold/auth/middleware"
+	"gitlab.com/pangold/auth/model"
 	"gitlab.com/pangold/auth/model/db"
 )
 
@@ -18,4 +19,24 @@ func NewUserService(conf config.Config, c middleware.Cache) *User {
 		db: db.NewUser(conf.MySQL),
 		cache: c,
 	}
+}
+
+func (this *User) GetUsers() []*model.User {
+	return this.db.GetUsers()
+}
+
+func (this *User) GetUser(id uint64) *model.User {
+	return this.db.GetUserById(id)
+}
+
+func (this *User) Create(u *model.User) error {
+	return this.db.Create(u)
+}
+
+func (this *User) Update(u *model.User) error {
+	return this.db.Update(u)
+}
+
+func (this *User) Delete(u *model.User) error {
+	return this.db.Delete(u)
 }
