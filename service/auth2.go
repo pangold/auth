@@ -56,6 +56,7 @@ func (this *Auth) RegisterWithVCode(a model.Account) error {
 	if err := this.CheckVCode(a); err != nil {
 		return err
 	}
+	a.Activated = true
 	if err := this.db.Create(&a); err != nil {
 		return err
 	}

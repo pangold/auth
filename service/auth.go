@@ -38,11 +38,16 @@ func (this *Auth) Register(a model.Account) error {
 	if err := a.IsPasswordValid(); err != nil {
 		return err
 	}
+	if !this.config.Activation {
+		defer this.GetActivationUrl(a)
+	} else {
+		a.Activated = true
+	}
 	if err := this.db.Create(&a); err != nil {
 		return err
 	}
 	// FIXME: set cache after registering if it's in activated state
-	return errors.New("invalid params")
+	return nil
 }
 
 func (this *Auth) GetActivationUrl(a model.Account) error {

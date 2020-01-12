@@ -2,6 +2,7 @@ package config
 
 type Server struct {
 	Addr       string `yaml:"addr"`
+	Activation bool   `yaml:"activation"`  // activation strategy, true: automatically activate, false: activate by another request
 	TokenExpire int   `yaml:"expire"`
 }
 

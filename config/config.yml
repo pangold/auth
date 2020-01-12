@@ -1,6 +1,7 @@
 server:
         addr: 127.0.0.1:9999
-        expire: 604800 # 60 * 60 * 24 * 7
+        activation: false    # activation strategy
+        expire: 604800       # 60 * 60 * 24 * 7
 jwt:
         secret-key: MySecretKey
 mysql:
