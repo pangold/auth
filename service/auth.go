@@ -54,12 +54,13 @@ func (this *Auth) GetActivationUrl(a model.Account) error {
 	if err := a.IsEmailValid(); err != nil {
 		return err
 	}
+	// FIXME: 
 	if !this.db.IsAccountExist(&model.Account{Email: a.Email}) {
 		return errors.New("email is not exist")
 	}
 	// generate activation hash code and save
 	code := utils.GenerateRandomString(64)
-	if err := this.cache.SetCacheValue("auth", code, a.Email, 60 * 5); err != nil {
+	if err := this.cache.SetCacheValue("auth", code, a.Email, this.config.LinkExpire); err != nil {
 		return errors.New("server error with " + err.Error())
 	}
 	// send activation code via email
@@ -86,6 +87,7 @@ func (this *Auth) Login(a model.Account) (string, error) {
 	if err := this.db.VerifyPassword(&a); err != nil {
 		return "", errors.New("invalid account or password")
 	}
+	// FIXME: pc
 	token, err := this.token.GenerateToken(strconv.Itoa(int(a.ID)), a.UserId, "pc", this.config.TokenExpire)
 	if err != nil {
 		return "", errors.New("server error " + err.Error())
@@ -101,12 +103,13 @@ func (this *Auth) Forgot(a model.Account) error {
 	if err := a.IsEmailValid(); err != nil {
 		return err
 	}
+	// FIXME:
 	if !this.db.IsAccountExist(&model.Account{Email: a.Email}) {
 		return errors.New("email is not exist")
 	}
 	// generate activation hash code and save
 	code := utils.GenerateRandomString(64)
-	if err := this.cache.SetCacheValue("auth", code, a.Email, 60 * 5); err != nil {
+	if err := this.cache.SetCacheValue("auth", code, a.Email, this.config.LinkExpire); err != nil {
 		return errors.New("server error with " + err.Error())
 	}
 	// send activation code via email
@@ -121,6 +124,7 @@ func (this *Auth) ResetByHashCode(a model.Account) error {
 	if err != nil {
 		return errors.New("invalid reset hash code")
 	}
+	// FIXME: clean cache first
 	a.Email = email.(string)
 	if err := this.db.UpdatePassword(a); err != nil {
 		return err

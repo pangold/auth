@@ -3,7 +3,9 @@ package config
 type Server struct {
 	Addr       string `yaml:"addr"`
 	Activation bool   `yaml:"activation"`  // activation strategy, true: automatically activate, false: activate by another request
-	TokenExpire int   `yaml:"expire"`
+	TokenExpire int   `yaml:"token-expire"`
+	VCodeExpire int   `yaml:"vcode-expire"`
+	LinkExpire int    `yaml:"link-expire"`
 }
 
 type Jwt struct {

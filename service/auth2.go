@@ -17,7 +17,7 @@ func (this *Auth) RequestVCode(a model.Account) error {
 	}
 	code := utils.GenerateRandomNumber(4)
 	// expire in 5 minutes
-	if err := this.cache.SetCacheValue("auth", target, code, 60 * 5); err != nil {
+	if err := this.cache.SetCacheValue("auth", target, code, this.config.VCodeExpire); err != nil {
 		return errors.New("server error with " + err.Error())
 	}
 	if err := this.vcode.SendVerificationCode(target, code); err != nil {
